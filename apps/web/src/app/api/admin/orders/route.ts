@@ -52,7 +52,7 @@ export async function GET(request: Request) {
   const takeParam = searchParams.get('take');
   const take = takeParam ? Math.min(Math.max(Number(takeParam) || 50, 1), MAX_TAKE) : 50;
 
-  const orders = await prisma.order.findMany({
+  const orders = await prisma.storeOrder.findMany({
     take,
     orderBy: { createdAt: 'desc' },
     include: {

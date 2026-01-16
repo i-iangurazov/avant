@@ -41,3 +41,4 @@ Thumbs.db
 # Tooling
 *.tsbuildinfo
 next-env.d.ts
+.vercel

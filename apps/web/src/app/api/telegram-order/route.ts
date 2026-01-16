@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { z } from 'zod';
 import { prisma, Locale } from '@qr/db';
 import { defaultLocale, isLanguage } from '@/lib/i18n';
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: t('avantech.telegram.empty') }, { status: 400 });
   }
 
-  const order = await prisma.order.create({
+  const order = await prisma.storeOrder.create({
     data: {
       userId: user?.id ?? null,
       locale: language,
@@ -130,7 +130,11 @@ export async function POST(request: Request) {
   });
 
   await dispatchOrderNotifications(order.id);
-  void processNotificationJobs({ orderId: order.id });
+  try {
+    after(() => processNotificationJobs({ orderId: order.id }));
+  } catch {
+    await processNotificationJobs({ orderId: order.id });
+  }
 
   return NextResponse.json({ ok: true, orderId: order.id });
 }

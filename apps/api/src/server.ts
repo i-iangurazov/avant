@@ -3371,7 +3371,8 @@ async function main() {
     const owner = await requireOwner(req, reply);
     if (!owner) return;
     const { venueId } = req.params as { venueId: string };
-    const parsed = OwnerStaffCreateDto.safeParse({ ...(req.body ?? {}), venueId });
+    const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, any>;
+    const parsed = OwnerStaffCreateDto.safeParse({ ...body, venueId });
     if (!parsed.success) return reply.status(400).send(parsed.error.flatten());
     if (!isPasswordStrong(parsed.data.password)) {
       return reply.status(400).send({ message: 'Password must be at least 8 characters with upper, lower, and numeric characters' });

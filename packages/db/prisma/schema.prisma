@@ -40,6 +40,43 @@ enum ImportRowStatus {
   FAILED
 }
 
+enum StaffRole {
+  ADMIN
+  KITCHEN
+  WAITER
+  VENUE_ADMIN
+  PLATFORM_OWNER
+}
+
+enum TableSessionStatus {
+  OPEN
+  CHECKOUT
+  CLOSED
+}
+
+enum OrderStatus {
+  NEW
+  ACCEPTED
+  IN_PROGRESS
+  READY
+  SERVED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum PaymentMode {
+  FULL
+  EVEN
+  SELECTED
+}
+
 model Category {
   id        String                 @id @default(cuid())
   sortOrder Int
@@ -131,7 +168,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   sessions Session[]
-  orders Order[]
+  orders StoreOrder[]
   importJobs ImportJob[]
   importAudits ImportAuditLog[]
 }
@@ -150,7 +187,7 @@ model Session {
   @@index([expiresAt])
 }
 
-model Order {
+model StoreOrder {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -163,6 +200,7 @@ model Order {
   notifications OrderNotificationJob[]
 
   @@index([createdAt])
+  @@map("Order")
 }
 
 model OrderNotificationJob {
@@ -179,7 +217,7 @@ model OrderNotificationJob {
   responseJson Json?
   messageId   String?
 
-  order Order @relation(fields: [orderId], references: [id])
+  order StoreOrder @relation(fields: [orderId], references: [id])
 
   @@index([status, nextRunAt])
   @@index([orderId])
@@ -237,4 +275,434 @@ model ImportAuditLog {
 
   @@index([userId, createdAt])
   @@index([importJobId])
+}
+
+model Venue {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  address   String?
+  currency  String
+  timezone  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  menus            Menu[]
+  menuCategories   MenuCategory[]
+  menuItems        MenuItem[]
+  menuChangeEvents MenuChangeEvent[]
+  tables           Table[]
+  tableSessions    TableSession[]
+  orders           Order[]
+  payments         PaymentIntent[]
+  staffUsers       StaffUser[]
+  platformUsers    PlatformUser[]
+  idempotencyKeys  IdempotencyKey[]
+}
+
+model Table {
+  id        String   @id @default(cuid())
+  venueId   String
+  name      String
+  code      String
+  capacity  Int?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  venue           Venue             @relation(fields: [venueId], references: [id])
+  sessions        TableSession[]
+  orders          Order[]
+  idempotencyKeys IdempotencyKey[]
+
+  @@unique([venueId, code])
+  @@index([venueId, createdAt])
+}
+
+model StaffUser {
+  id           String    @id @default(cuid())
+  venueId      String
+  role         StaffRole
+  name         String
+  phone        String?   @unique
+  email        String?   @unique
+  passwordHash String
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  venue           Venue             @relation(fields: [venueId], references: [id])
+  sessions        StaffSession[]
+  idempotencyKeys IdempotencyKey[]
+
+  @@index([venueId, createdAt])
+}
+
+model StaffSession {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  user StaffUser @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model PlatformUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String?
+  role         StaffRole
+  venueId      String?
+  passwordHash String
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  venue    Venue?            @relation(fields: [venueId], references: [id])
+  sessions PlatformSession[]
+
+  @@index([venueId])
+}
+
+model PlatformSession {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  user PlatformUser @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model Menu {
+  id        String   @id @default(cuid())
+  venueId   String   @unique
+  name      String
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  venue        Venue            @relation(fields: [venueId], references: [id])
+  categories   MenuCategory[]
+  items        MenuItem[]
+  changeEvents MenuChangeEvent[]
+}
+
+model MenuCategory {
+  id        String   @id @default(cuid())
+  menuId    String
+  venueId   String
+  name      String
+  color     String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  menu  Menu   @relation(fields: [menuId], references: [id])
+  venue Venue  @relation(fields: [venueId], references: [id])
+  items MenuItem[]
+
+  @@index([menuId, sortOrder])
+  @@index([venueId, sortOrder])
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  menuId      String
+  venueId     String
+  categoryId  String
+  name        String
+  description String?
+  imageUrl    String?
+  accentColor String?
+  price       Int
+  isActive    Boolean  @default(true)
+  isInStock   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  menu       Menu               @relation(fields: [menuId], references: [id])
+  venue      Venue              @relation(fields: [venueId], references: [id])
+  category   MenuCategory        @relation(fields: [categoryId], references: [id])
+  modifiers  MenuModifierGroup[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([menuId, sortOrder])
+  @@index([categoryId, sortOrder])
+  @@index([venueId])
+}
+
+model MenuModifierGroup {
+  id         String   @id @default(cuid())
+  itemId     String
+  name       String
+  isRequired Boolean  @default(false)
+  minSelect  Int      @default(0)
+  maxSelect  Int      @default(1)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  item    MenuItem             @relation(fields: [itemId], references: [id])
+  options MenuModifierOption[]
+
+  @@index([itemId, sortOrder])
+}
+
+model MenuModifierOption {
+  id         String   @id @default(cuid())
+  groupId    String
+  name       String
+  priceDelta Int      @default(0)
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  group MenuModifierGroup @relation(fields: [groupId], references: [id])
+
+  @@index([groupId, sortOrder])
+}
+
+model MenuChangeEvent {
+  id        String   @id @default(cuid())
+  menuId    String
+  venueId   String
+  type      String
+  payload   Json?
+  version   Int
+  createdAt DateTime @default(now())
+
+  menu  Menu  @relation(fields: [menuId], references: [id])
+  venue Venue @relation(fields: [venueId], references: [id])
+
+  @@index([venueId, version])
+  @@index([menuId])
+}
+
+model TableSession {
+  id           String             @id @default(cuid())
+  venueId      String
+  tableId      String
+  status       TableSessionStatus @default(OPEN)
+  peopleCount  Int?
+  openedAt     DateTime           @default(now())
+  closedAt     DateTime?
+  lastActiveAt DateTime           @default(now())
+  stateVersion Int                @default(1)
+
+  venue           Venue             @relation(fields: [venueId], references: [id])
+  table           Table             @relation(fields: [tableId], references: [id])
+  cartItems       CartItem[]
+  orders          Order[]
+  payments        PaymentIntent[]
+  splitPlans      SplitPlan[]
+  paymentQuotes   PaymentQuote[]
+  idempotencyKeys IdempotencyKey[]
+
+  @@index([venueId, status])
+  @@index([tableId, status])
+  @@index([lastActiveAt])
+}
+
+model CartItem {
+  id               String   @id @default(cuid())
+  sessionId        String
+  menuItemId       String
+  qty              Int
+  note             String?
+  addedByDeviceHash String?
+  unitPrice        Int
+  itemName         String
+  createdAt        DateTime @default(now())
+
+  session   TableSession       @relation(fields: [sessionId], references: [id])
+  menuItem  MenuItem           @relation(fields: [menuItemId], references: [id])
+  modifiers CartItemModifier[]
+
+  @@index([sessionId, createdAt])
+}
+
+model CartItemModifier {
+  id         String   @id @default(cuid())
+  cartItemId String
+  optionId   String
+  optionName String
+  priceDelta Int
+  createdAt  DateTime @default(now())
+
+  cartItem CartItem @relation(fields: [cartItemId], references: [id])
+
+  @@index([cartItemId])
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  venueId    String
+  sessionId  String
+  tableId    String
+  status     OrderStatus @default(NEW)
+  number     Int
+  comment    String?
+  acceptedAt DateTime?
+  readyAt    DateTime?
+  servedAt   DateTime?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  venue    Venue         @relation(fields: [venueId], references: [id])
+  session  TableSession  @relation(fields: [sessionId], references: [id])
+  table    Table         @relation(fields: [tableId], references: [id])
+  items    OrderItem[]
+  payments PaymentIntent[]
+
+  @@index([venueId, createdAt])
+  @@index([sessionId, createdAt])
+  @@index([status, createdAt])
+  @@map("TableOrder")
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  menuItemId String
+  qty        Int
+  note       String?
+  unitPrice  Int
+  itemName   String
+  createdAt  DateTime @default(now())
+
+  order       Order               @relation(fields: [orderId], references: [id])
+  menuItem    MenuItem            @relation(fields: [menuItemId], references: [id])
+  modifiers   OrderItemModifier[]
+  allocations PaymentAllocation[]
+
+  @@index([orderId])
+}
+
+model OrderItemModifier {
+  id          String   @id @default(cuid())
+  orderItemId String
+  optionId    String
+  optionName  String
+  priceDelta  Int
+  createdAt   DateTime @default(now())
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+
+  @@index([orderItemId])
+}
+
+model PaymentIntent {
+  id         String        @id @default(cuid())
+  venueId    String
+  sessionId  String
+  orderId    String?
+  splitPlanId String?
+  sharesPaid Int?
+  amount     Int
+  status     PaymentStatus
+  provider   String
+  payload    Json?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  venue       Venue            @relation(fields: [venueId], references: [id])
+  session     TableSession     @relation(fields: [sessionId], references: [id])
+  order       Order?           @relation(fields: [orderId], references: [id])
+  splitPlan   SplitPlan?       @relation(fields: [splitPlanId], references: [id])
+  allocations PaymentAllocation[]
+
+  @@index([venueId, createdAt])
+  @@index([sessionId, createdAt])
+  @@index([orderId])
+}
+
+model PaymentAllocation {
+  id          String   @id @default(cuid())
+  paymentId   String
+  orderItemId String
+  amountCents Int
+  createdAt   DateTime @default(now())
+
+  payment   PaymentIntent @relation(fields: [paymentId], references: [id])
+  orderItem OrderItem     @relation(fields: [orderItemId], references: [id])
+
+  @@index([paymentId])
+  @@index([orderItemId])
+}
+
+model SplitPlan {
+  id          String   @id @default(cuid())
+  sessionId   String
+  totalShares Int
+  baseVersion Int
+  locked      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  session  TableSession    @relation(fields: [sessionId], references: [id])
+  payments PaymentIntent[]
+  quotes   PaymentQuote[]
+
+  @@index([sessionId, createdAt])
+}
+
+model PaymentQuote {
+  id           String      @id @default(cuid())
+  sessionId    String
+  mode         PaymentMode
+  amount       Int
+  stateVersion Int
+  splitPlanId  String?
+  sharesToPay  Int?
+  selectedItems Json?
+  expiresAt    DateTime
+  createdAt    DateTime    @default(now())
+
+  session   TableSession @relation(fields: [sessionId], references: [id])
+  splitPlan SplitPlan?   @relation(fields: [splitPlanId], references: [id])
+
+  @@index([sessionId, createdAt])
+  @@index([expiresAt])
+}
+
+model IdempotencyKey {
+  id          String   @id @default(cuid())
+  scope       String
+  key         String
+  requestHash String
+  responseJson Json?
+  statusCode  Int?
+  expiresAt   DateTime?
+  venueId     String?
+  tableId     String?
+  staffUserId String?
+  sessionId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  venue     Venue?        @relation(fields: [venueId], references: [id])
+  table     Table?        @relation(fields: [tableId], references: [id])
+  staffUser StaffUser?    @relation(fields: [staffUserId], references: [id])
+  session   TableSession? @relation(fields: [sessionId], references: [id])
+
+  @@unique([scope, key], name: "scope_key")
+  @@index([expiresAt])
+  @@index([sessionId])
 }

@@ -82,7 +82,7 @@ const mapOrderSnapshot = (order: {
 });
 
 const loadOrderWithUser = async (orderId: string) => {
-  const order = await prisma.order.findUnique({
+  const order = await prisma.storeOrder.findUnique({
     where: { id: orderId },
     include: { user: true },
   });
