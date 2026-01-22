@@ -122,7 +122,7 @@ function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-body"
-      className={cn("min-h-0 flex-1 overflow-y-auto pr-1", className)}
+      className={cn("min-h-0 flex-1 overflow-y-auto px-1", className)}
       {...props}
     />
   )

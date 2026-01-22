@@ -48,7 +48,7 @@ function AdminToolbar({ search, filters, actions, className }: AdminToolbarProps
         {search ? <div className="flex-1">{search}</div> : null}
         {filters ? <div className="flex flex-wrap items-center gap-2">{filters}</div> : null}
       </div>
-      {actions ? <div className="flex items-center gap-2 md:shrink-0">{actions}</div> : null}
+      {actions ? <div className="grid grid-cols-1 sm:flex items-center gap-2 md:shrink-0">{actions}</div> : null}
     </div>
   )
 }
