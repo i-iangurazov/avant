@@ -59,6 +59,9 @@
       "subcategoryLabel": "Подкатегория",
       "allSubcategories": "Все подкатегории"
     },
+    "catalog": {
+      "uncategorized": "Без подкатегории"
+    },
     "cart": {
       "title": "Корзина",
       "subtitle": "Проверьте товары перед заказом.",

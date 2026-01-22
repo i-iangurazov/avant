@@ -36,6 +36,7 @@ type CartLine = {
 function AvantechContent() {
   const { lang } = useLanguage();
   const t = useTranslations('avantech');
+  const tCatalog = useTranslations('avantech.catalog');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
   const router = useRouter();
@@ -63,6 +64,13 @@ function AvantechContent() {
 
   const currencyLabel = tCommon('labels.currency');
   const formatPriceLocalized = (amount: number) => formatPrice(amount, lang, currencyLabel);
+  const casingLocale = lang === 'kg' ? 'ky' : lang;
+  const formatTitleCase = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return value;
+    const lower = trimmed.toLocaleLowerCase(casingLocale);
+    return lower.charAt(0).toLocaleUpperCase(casingLocale) + lower.slice(1);
+  };
 
   useEffect(() => {
     let isActive = true;
@@ -400,22 +408,73 @@ function AvantechContent() {
                 id={`category-${category.id}`}
                 title={category.name}
                 count={category.products.length}
+                contentClassName="mt-0"
               >
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {category.products.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      variants={product.variants}
-                      highlight={highlightedProductId === product.id}
-                      autoSelectVariantId={autoSelectVariantId}
-                      getQuantity={getQuantity}
-                      setQuantity={handleSetQuantity}
-                      onIncrement={handleAddToCart}
-                      onDecrement={decrement}
-                      formatPrice={formatPriceLocalized}
-                    />
-                  ))}
+                <div className="flex flex-col gap-6">
+                  {(() => {
+                    const subcategoryMap = new Map(category.subcategories.map((subcategory) => [subcategory.id, subcategory]));
+                    const orderedSubcategories = [...category.subcategories].sort(
+                      (a, b) => a.sortOrder - b.sortOrder
+                    );
+                    const subcategoryGroups = orderedSubcategories
+                      .map((subcategory) => ({
+                        id: subcategory.id,
+                        name: formatTitleCase(subcategory.name),
+                        products: category.products.filter((product) => product.subcategoryId === subcategory.id),
+                      }))
+                      .filter(
+                        (group) => selectedSubcategoryId === 'all' || group.id === selectedSubcategoryId
+                      );
+
+                    const uncategorizedProducts = category.products.filter(
+                      (product) => !product.subcategoryId || !subcategoryMap.has(product.subcategoryId)
+                    );
+
+                    if (uncategorizedProducts.length > 0) {
+                      subcategoryGroups.push({
+                        id: `${category.id}-uncategorized`,
+                        name: formatTitleCase(tCatalog('uncategorized')),
+                        products: uncategorizedProducts,
+                      });
+                    }
+
+                    return subcategoryGroups.map((group) => (
+                      <CategorySection
+                        key={group.id}
+                        title={group.name}
+                        count={group.products.length}
+                        className="scroll-mt-16"
+                        headerClassName="mb-3"
+                        titleClassName="text-sm md:text-base"
+                        countClassName="px-2 py-0.5 text-[11px]"
+                        contentClassName="mt-0"
+                        defaultOpen={true}
+                      >
+                        {group.products.length === 0 ? (
+                          <div className="rounded-2xl border border-dashed border-border bg-white px-4 py-6 text-center text-xs text-muted-foreground">
+                            {tCommon('states.empty')}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            {group.products.map((product) => (
+                              <ProductCard
+                                key={product.id}
+                                product={product}
+                                variants={product.variants}
+                                highlight={highlightedProductId === product.id}
+                                autoSelectVariantId={autoSelectVariantId}
+                                getQuantity={getQuantity}
+                                setQuantity={handleSetQuantity}
+                                onIncrement={handleAddToCart}
+                                onDecrement={decrement}
+                                formatPrice={formatPriceLocalized}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </CategorySection>
+                    ));
+                  })()}
                 </div>
               </CategorySection>
             ))

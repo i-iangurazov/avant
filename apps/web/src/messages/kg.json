@@ -59,6 +59,9 @@
       "subcategoryLabel": "Төмөнкү категория",
       "allSubcategories": "Бардык төмөнкү категориялар"
     },
+    "catalog": {
+      "uncategorized": "Подкатегориясыз"
+    },
     "cart": {
       "title": "Себет",
       "subtitle": "Заказдан мурун товарларды текшериңиз.",

@@ -59,6 +59,9 @@
       "subcategoryLabel": "Subcategory",
       "allSubcategories": "All subcategories"
     },
+    "catalog": {
+      "uncategorized": "Uncategorized"
+    },
     "cart": {
       "title": "Cart",
       "subtitle": "Review items before ordering.",

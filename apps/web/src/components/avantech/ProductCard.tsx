@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { CatalogProduct, CatalogVariant } from '@/lib/avantech/catalogApi';
+import { useLanguage } from '@/lib/useLanguage';
 import { cn } from '@/lib/utils';
 import VariantChips from './VariantChips';
 import QuantityStepper from './QuantityStepper';
@@ -20,6 +21,13 @@ type Props = {
 };
 
 const attributePriority = ['diameter', 'thread', 'length', 'pressure', 'angle', 'width', 'volume', 'material'];
+const formatTitleCase = (value: string, locale: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+  const casingLocale = locale === 'kg' ? 'ky' : locale;
+  const lower = trimmed.toLocaleLowerCase(casingLocale);
+  return lower.charAt(0).toLocaleUpperCase(casingLocale) + lower.slice(1);
+};
 
 export default function ProductCard({
   product,
@@ -32,11 +40,13 @@ export default function ProductCard({
   onDecrement,
   formatPrice,
 }: Props) {
+  const { lang } = useLanguage();
   const t = useTranslations('avantech');
   const tAttr = useTranslations('avantech.attributes');
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const prevQuantityRef = useRef(0);
   const prevVariantRef = useRef<string | null>(null);
+  const productName = useMemo(() => formatTitleCase(product.name, lang), [product.name, lang]);
 
   const activeVariants = useMemo(() => variants.filter((variant) => variant.isActive), [variants]);
 
@@ -121,7 +131,7 @@ export default function ProductCard({
           )}
         </div>
         <div className="flex-1">
-          <h3 className="text-base font-semibold text-foreground">{product.name}</h3>
+          <h3 className="text-base font-semibold text-foreground">{productName}</h3>
           {product.description && (
             <p className="mt-1 text-xs text-muted-foreground">{product.description}</p>
           )}
