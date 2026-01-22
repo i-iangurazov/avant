@@ -38,6 +38,7 @@
     "actions": {
       "increaseQty": "Увеличить количество",
       "decreaseQty": "Уменьшить количество",
+      "removeItem": "Удалить товар",
       "selectVariant": "Выбрать вариант: {variant}"
     },
     "attributes": {
@@ -63,21 +64,22 @@
       "subtitle": "Проверьте товары перед заказом.",
       "empty": "Корзина пуста.",
       "total": "Итого",
+      "itemTotal": "Сумма по позиции",
       "order": "Оформить заказ",
       "sending": "Отправка...",
       "orderSuccess": "Заказ отправлен в Telegram.",
       "orderFailed": "Не удалось отправить заказ."
     },
     "auth": {
-      "title": "Вход администратора",
-      "subtitle": "Доступ к админ-панели.",
+      "title": "Вход",
+      "subtitle": "Доступ к магазину.",
       "phoneLabel": "Телефон",
       "phonePlaceholder": "+996XXXXXXXXX",
       "passwordLabel": "Пароль",
       "passwordPlaceholder": "Введите пароль",
       "submit": "Войти",
       "submitting": "Входим...",
-      "helper": "Используйте телефон и пароль администратора.",
+      "helper": "Используйте телефон и пароль.",
       "required": "Телефон и пароль обязательны.",
       "invalidPhone": "Введите корректный номер телефона."
     },

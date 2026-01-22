@@ -440,6 +440,7 @@ function AvantechContent() {
           onIncrement={handleAddToCart}
           onDecrement={decrement}
           onSetQuantity={handleSetQuantity}
+          onRemove={removeItem}
           onOrder={handleOrder}
           isOrdering={isOrdering}
         />

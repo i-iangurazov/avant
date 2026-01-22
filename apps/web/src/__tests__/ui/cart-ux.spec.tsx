@@ -32,6 +32,7 @@ const CartHarness = () => {
           onIncrement={() => {}}
           onDecrement={() => {}}
           onSetQuantity={() => {}}
+          onRemove={() => {}}
           onOrder={() => {}}
           isOrdering={false}
         />

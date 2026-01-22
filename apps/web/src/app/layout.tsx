@@ -3,6 +3,7 @@ import { getLocale, getMessages, getTranslations, getTimeZone } from 'next-intl/
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 import IntlProvider from '@/components/IntlProvider';
+import PwaAutoReload from '@/components/PwaAutoReload';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +41,7 @@ export default async function RootLayout({
     <html lang={locale}>
       <body className="font-sans antialiased">
         <IntlProvider locale={locale} messages={messages} timeZone={timeZone}>
+          <PwaAutoReload />
           {children}
           <Toaster />
         </IntlProvider>

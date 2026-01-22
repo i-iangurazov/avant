@@ -38,6 +38,7 @@
     "actions": {
       "increaseQty": "Санын көбөйтүү",
       "decreaseQty": "Санын азайтуу",
+      "removeItem": "Товарды алып салуу",
       "selectVariant": "Вариант тандоо: {variant}"
     },
     "attributes": {
@@ -63,6 +64,7 @@
       "subtitle": "Заказдан мурун товарларды текшериңиз.",
       "empty": "Себет бош.",
       "total": "Жалпы",
+      "itemTotal": "Позициянын суммасы",
       "order": "Заказ берүү",
       "sending": "Жөнөтүлүүдө...",
       "orderSuccess": "Заказ Telegram'га жөнөтүлдү.",

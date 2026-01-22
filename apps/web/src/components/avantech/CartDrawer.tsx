@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { Trash2 } from 'lucide-react';
 import { SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ type Props = {
   onIncrement: (variantId: string) => void;
   onDecrement: (variantId: string) => void;
   onSetQuantity: (variantId: string, quantity: number) => void;
+  onRemove: (variantId: string) => void;
   onOrder: () => void;
   isOrdering: boolean;
 };
@@ -33,6 +35,7 @@ export default function CartDrawer({
   onIncrement,
   onDecrement,
   onSetQuantity,
+  onRemove,
   onOrder,
   isOrdering,
 }: Props) {
@@ -54,28 +57,45 @@ export default function CartDrawer({
           </div>
         ) : (
           <div className="flex flex-col gap-4 pb-6">
-            {lines.map((line) => (
-              <div key={line.variantId} className="rounded-2xl border border-border bg-white p-4 shadow-sm">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-foreground">{line.productName}</div>
-                    <div className="text-xs text-muted-foreground">{line.variantLabel}</div>
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      {line.quantity} x {formatPrice(line.unitPrice)}
+            {lines.map((line) => {
+              const lineTotal = line.unitPrice * line.quantity;
+              return (
+                <div key={line.variantId} className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-foreground">{line.productName}</div>
+                      <div className="text-xs text-muted-foreground">{line.variantLabel}</div>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="text-sm font-semibold text-foreground">
+                        {line.quantity} x {formatPrice(line.unitPrice)} = {formatPrice(lineTotal)}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <QuantityStepper
+                          value={line.quantity}
+                          onIncrement={() => onIncrement(line.variantId)}
+                          onDecrement={() => onDecrement(line.variantId)}
+                          onChange={(next) => onSetQuantity(line.variantId, next)}
+                          increaseLabel={t('actions.increaseQty')}
+                          decreaseLabel={t('actions.decreaseQty')}
+                          className="min-w-[120px]"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => onRemove(line.variantId)}
+                          aria-label={t('actions.removeItem')}
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  <QuantityStepper
-                    value={line.quantity}
-                    onIncrement={() => onIncrement(line.variantId)}
-                    onDecrement={() => onDecrement(line.variantId)}
-                    onChange={(next) => onSetQuantity(line.variantId, next)}
-                    increaseLabel={t('actions.increaseQty')}
-                    decreaseLabel={t('actions.decreaseQty')}
-                    className="min-w-[120px]"
-                  />
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </ScrollArea>
