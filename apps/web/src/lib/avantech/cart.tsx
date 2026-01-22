@@ -81,6 +81,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.removeItem(STORAGE_KEY);
       }
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHydrated(true);
   }, []);
 

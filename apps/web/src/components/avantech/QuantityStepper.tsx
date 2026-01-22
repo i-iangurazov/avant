@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 type Props = {
   value: number;
@@ -44,22 +46,18 @@ export default function QuantityStepper({
   };
 
   return (
-    <div
-      className={cn(
-        'flex items-center justify-between gap-2 bg-white',
-        className
-      )}
-    >
-      <button
+    <div className={cn('flex items-center justify-between gap-2 bg-white', className)}>
+      <Button
         type="button"
+        variant="outline"
+        size="icon"
         aria-label={decreaseLabel}
         onClick={onDecrement}
         disabled={value <= 0}
-        className="flex size-11 items-center justify-center rounded-2xl border border-border text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Minus className="size-4" />
-      </button>
-      <input
+      </Button>
+      <Input
         type="text"
         inputMode="numeric"
         value={inputValue}
@@ -77,16 +75,17 @@ export default function QuantityStepper({
         }}
         onFocus={(event) => event.currentTarget.select()}
         aria-label="Quantity"
-        className="h-11 w-16 rounded-xl border border-border bg-white text-center text-base font-semibold text-foreground"
+        className="h-10 w-16 rounded-xl border border-border bg-white text-center text-base font-semibold text-foreground"
       />
-      <button
+      <Button
         type="button"
+        size="icon"
         aria-label={increaseLabel}
         onClick={onIncrement}
-        className="flex size-11 items-center justify-center rounded-2xl bg-[#FF2800] text-white shadow-sm transition hover:bg-[#e62500]"
+        className="bg-primary text-primary-foreground hover:bg-primary/90"
       >
         <Plus className="size-4" />
-      </button>
+      </Button>
     </div>
   );
 }

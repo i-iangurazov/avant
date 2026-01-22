@@ -1,5 +1,5 @@
 {
-  "name": "@qr/db",
+  "name": "@plumbing/db",
   "version": "0.0.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -7,8 +7,10 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
+    "prisma": "prisma",
+    "db:reset": "prisma migrate reset",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts"
   },

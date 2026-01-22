@@ -34,6 +34,12 @@ export const uploadToStorage = async (params: {
 
   await client.send(command);
 
-  const publicBase = requireEnv('S3_PUBLIC_BASE_URL').replace(/\/$/, '');
-  return `${publicBase}/${params.key}`;
+  const publicBase = requireEnv('S3_PUBLIC_BASE_URL');
+  return buildPublicUrl(publicBase, bucket, params.key);
+};
+
+export const buildPublicUrl = (publicBase: string, bucket: string, key: string) => {
+  const normalizedBase = publicBase.replace(/\/$/, '');
+  const isR2Dev = normalizedBase.endsWith('.r2.dev');
+  return isR2Dev ? `${normalizedBase}/${bucket}/${key}` : `${normalizedBase}/${key}`;
 };

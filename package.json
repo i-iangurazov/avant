@@ -1,17 +1,20 @@
 {
-  "name": "qr-ordering",
+  "name": "plumbing-store",
   "private": true,
   "packageManager": "pnpm@10.0.0",
   "engines": {
     "node": "20.x"
   },
   "scripts": {
-    "dev": "turbo dev --filter @qr/web",
+    "dev": "turbo dev --filter @plumbing/web",
     "dev:all": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "postinstall": "if [ -z \"$DATABASE_URL\" ]; then echo \"Skipping prisma generate (no DATABASE_URL)\"; else pnpm --filter @qr/db run prisma:generate; fi",
+    "test": "pnpm --filter @plumbing/web test",
+    "test:db": "DATABASE_URL=$DATABASE_URL_TEST NODE_ENV=test pnpm --filter @plumbing/db exec prisma migrate deploy && DATABASE_URL=$DATABASE_URL_TEST NODE_ENV=test pnpm --filter @plumbing/web test:db",
+    "test:e2e": "pnpm --filter @plumbing/web test:ui",
+    "postinstall": "if [ -z \"$DATABASE_URL\" ]; then echo \"Skipping prisma generate (no DATABASE_URL)\"; else pnpm --filter @plumbing/db run prisma:generate; fi",
     "db:up": "docker compose -f infra/docker/compose.yml up -d",
     "db:down": "docker compose -f infra/docker/compose.yml down",
     "db:reset": "docker compose -f infra/docker/compose.yml down -v && docker compose -f infra/docker/compose.yml up -d"
@@ -27,6 +30,7 @@
     ]
   },
   "devDependencies": {
+    "@typescript-eslint/parser": "^8.43.0",
     "@types/node": "^25.0.1",
     "eslint": "^9.39.2",
     "prettier": "^3.7.4",

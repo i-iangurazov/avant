@@ -43,6 +43,7 @@ export default function ProductCard({
   useEffect(() => {
     if (!autoSelectVariantId) return;
     if (activeVariants.some((variant) => variant.id === autoSelectVariantId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedVariantId(autoSelectVariantId);
     }
   }, [activeVariants, autoSelectVariantId]);
@@ -61,6 +62,7 @@ export default function ProductCard({
       return;
     }
     if (prevQuantityRef.current > 0 && quantity === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedVariantId(null);
     }
     prevQuantityRef.current = quantity;
@@ -99,12 +101,13 @@ export default function ProductCard({
       id={`product-${product.id}`}
       className={cn(
         'flex h-full flex-col gap-3 rounded-2xl border border-border bg-white p-3 shadow-sm transition',
-        highlight && 'ring-2 ring-[#FF2800]/40 motion-safe:animate-[avantech-highlight_1.1s_ease-in-out]'
+        highlight && 'ring-2 ring-primary/40 motion-safe:animate-[avantech-highlight_1.1s_ease-in-out]'
       )}
     >
       <div className="flex gap-4">
-        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-border bg-[#FF2800]/5">
+        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-border bg-primary/5">
           {product.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={product.imageUrl}
               alt={product.name}
@@ -112,7 +115,7 @@ export default function ProductCard({
               loading="lazy"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[#FF2800]/10 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="flex h-full w-full items-center justify-center bg-primary/10 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
               No image
             </div>
           )}

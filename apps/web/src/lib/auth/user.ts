@@ -1,6 +1,6 @@
 import 'server-only';
 
-import type { User, UserRole } from '@qr/db';
+import type { User, UserRole } from '@plumbing/db';
 
 export type AuthUser = {
   id: string;

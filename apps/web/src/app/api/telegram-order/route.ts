@@ -1,6 +1,6 @@
 import { NextResponse, after } from 'next/server';
 import { z } from 'zod';
-import { prisma, Locale } from '@qr/db';
+import { prisma, Locale } from '@plumbing/db';
 import { defaultLocale, isLanguage } from '@/lib/i18n';
 import { getSessionUser } from '@/lib/auth/session';
 import { dispatchOrderNotifications, processNotificationJobs } from '@/lib/notifications/jobs';

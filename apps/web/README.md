@@ -1,107 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Plumbing Store Web
 
-## Getting Started
-
-First, run the development server:
+## Local setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm -w install
+pnpm --filter @plumbing/db run db:generate
+pnpm --filter @plumbing/db run db:migrate
+pnpm --filter @plumbing/web run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Admin
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Sign in at `/login` with an admin phone + password.
+- Manage taxonomy at `/admin/taxonomy`.
+- Manage products at `/admin/products`.
+- Manage customers at `/admin/customers`.
+- Manage orders at `/admin/orders`.
 
-## Learn More
+## Seed data
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## How to import from PDF/CSV
-
-1) Sign in with an ADMIN account.
-2) Visit `/admin/import`.
-3) Upload a `.csv` or `.pdf` (max 10MB).
-4) For CSV:
-   - Confirm the column mapping (category, product, price are required).
-   - Extra columns are stored in `variant.attributes`.
-5) Review the preview table; low-confidence PDF rows are marked “Needs review”.
-6) If low-confidence rows exist, confirm “I reviewed low-confidence rows” to enable commit.
-7) Click “Commit import” and review the summary.
-8) Use “Undo last import” to deactivate items created by the last commit.
-
-Notes:
-- SKU is the primary key; missing SKUs are replaced by a stable `AUTO-` hash.
-- Price values are normalized to integer KGS.
-- PDF parsing runs server-side; low-confidence rows are marked “Needs review”.
-- Server-side PDF parsing uses `pdf-parse` (run `pnpm install` to update the lockfile).
-
-## Auth & customers
-
-1) Run migrations and generate the Prisma client:
 ```bash
-pnpm --filter @qr/db prisma:migrate -- --name add-session
-pnpm --filter @qr/db prisma:generate
+pnpm --filter @plumbing/db run prisma:seed
 ```
-2) Create an admin user (once):
+
+## Taxonomy import
+
+- Upload `.csv` or `.xlsx` files in `/admin/taxonomy`.
+- CSV accepts both comma and semicolon delimiters.
+- Use the “Download sample CSV” button as a starting template.
+
+## Product images
+
+The image upload endpoint uses S3-compatible storage. Set these env vars:
+
+```
+S3_ENDPOINT=
+S3_REGION=auto
+S3_BUCKET=
+S3_ACCESS_KEY_ID=
+S3_SECRET_ACCESS_KEY=
+S3_PUBLIC_BASE_URL=
+```
+
+## Routes
+
+Pages:
+- `/` storefront
+- `/login` admin sign in
+- `/admin/taxonomy` taxonomy admin
+- `/admin/products` products admin
+- `/admin/customers` customers admin
+- `/admin/orders` orders admin
+
+API (admin routes require an admin session cookie):
+- `GET /api/catalog?locale=en|ru|kg` catalog payload
+- `POST /api/telegram-order` create order + trigger notifications
+- `POST /api/auth/login` sign in
+- `GET /api/auth/me` session info
+- `POST /api/auth/logout` sign out
+- `GET /api/admin/taxonomy` list taxonomy (`includeInactive=1` to include disabled)
+- `GET /api/admin/taxonomy/export` download CSV
+- `POST /api/admin/taxonomy/import-xlsx?mode=preview|sync` upload CSV/XLSX
+- `POST /api/admin/taxonomy/categories` create category
+- `PATCH /api/admin/taxonomy/categories/:id` update category
+- `DELETE /api/admin/taxonomy/categories/:id` disable category + subcategories
+- `POST /api/admin/taxonomy/subcategories` create subcategory
+- `PATCH /api/admin/taxonomy/subcategories/:id` update subcategory
+- `DELETE /api/admin/taxonomy/subcategories/:id` disable subcategory
+- `GET /api/admin/products?q=&categoryId=&page=&pageSize=` list products
+- `POST /api/admin/products` create product + variants
+- `GET /api/admin/products/:id` product detail
+- `PATCH /api/admin/products/:id` update product + variants
+- `DELETE /api/admin/products/:id` disable product
+- `POST /api/admin/products/upload-image` upload image (jpeg/png/webp, max 5MB)
+- `GET /api/admin/customers?q=&page=&pageSize=` list customers
+- `GET /api/admin/customers/:id` customer detail
+- `POST /api/admin/customers` create customer
+- `PATCH /api/admin/customers/:id` update customer
+- `DELETE /api/admin/customers/:id` disable customer
+- `GET /api/admin/orders?q=&status=&page=&pageSize=` list orders
+- `GET /api/admin/orders/:id` order detail
+- `POST /api/admin/orders` create order
+- `PATCH /api/admin/orders/:id` update order
+- `POST /api/admin/orders/:id/send-telegram` send order to Telegram
+- `POST /api/internal/process-notifications` internal worker (`x-internal-secret`)
+
+## Tests
+
 ```bash
-node -e "const bcrypt=require('bcryptjs'); bcrypt.hash('YourPass123',10).then(console.log)"
-pnpm --filter @qr/db prisma:studio
-```
-Use Prisma Studio to insert a `User` with:
-- `role = ADMIN`
-- `phone = +996XXXXXXXXX`
-- `passwordHash = <hash from the command>`
-
-3) Log in at `/login` using phone + password.
-4) Log out with `POST /api/auth/logout` (clears the session cookie).
-5) Create customers in `/admin/customers` (password optional; temp password is shown once).
-
-## Order notifications (Telegram + WhatsApp Cloud API)
-
-1) Set env vars in `.env.local` (server-side only):
-```
-TELEGRAM_BOT_TOKEN=
-TELEGRAM_CHAT_ID=
-WHATSAPP_PHONE_NUMBER_ID=
-WHATSAPP_BUSINESS_ACCESS_TOKEN=
-WHATSAPP_API_VERSION=v21.0
-WHATSAPP_RECIPIENTS=+996700000000,+996555000000
-WHATSAPP_MODE=template
-WHATSAPP_TEMPLATE_NAME_ORDER=new_order
-WHATSAPP_TEMPLATE_LANG=ru
-INTERNAL_SECRET=your-internal-secret
+pnpm --filter @plumbing/web test
+pnpm --filter @plumbing/web test:db
+pnpm --filter @plumbing/web test:ui
 ```
 
-2) Create a WhatsApp template named `new_order` with placeholders:
-```
-New order {{1}}. Customer: {{2}} ({{3}}). Address: {{4}}. Total: {{5}}. Items: {{6}}
-```
+DB tests require a running test database and both `DATABASE_URL` and `DATABASE_URL_TEST` pointing to it. Example:
 
-3) Run migrations:
 ```bash
-pnpm --filter @qr/db prisma:migrate
-pnpm --filter @qr/db prisma:generate
+DATABASE_URL_TEST=postgresql://postgres:postgres@localhost:5432/plumbing_store_test \
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/plumbing_store_test \
+pnpm --filter @plumbing/web test:db
 ```
 
-4) Process notification jobs:
-- Recommended: call `POST /api/internal/process-notifications` from a cron with header `x-internal-secret: <INTERNAL_SECRET>`.
-- Fallback: jobs are also triggered after each order and can be retried from `/admin/orders`.
+## Command reference
+
+```bash
+# Install
+pnpm -w install
+
+# Database
+pnpm --filter @plumbing/db run db:generate
+pnpm --filter @plumbing/db run db:migrate
+pnpm --filter @plumbing/db run db:reset
+pnpm --filter @plumbing/db run prisma:seed
+pnpm --filter @plumbing/db run prisma:studio
+
+# Web
+pnpm --filter @plumbing/web run dev
+pnpm --filter @plumbing/web run build
+pnpm --filter @plumbing/web run typecheck
+pnpm --filter @plumbing/web run lint
+
+# Tests
+pnpm --filter @plumbing/web test
+pnpm --filter @plumbing/web test:db
+pnpm --filter @plumbing/web test:ui
+
+# Docker (local DB)
+docker compose -f infra/docker/compose.yml up -d
+docker compose -f infra/docker/compose.yml down
+docker compose -f infra/docker/compose.test.yml up -d
+docker compose -f infra/docker/compose.test.yml down
+```

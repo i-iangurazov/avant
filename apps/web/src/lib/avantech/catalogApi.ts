@@ -11,6 +11,7 @@ export type CatalogVariant = {
 export type CatalogProduct = {
   id: string;
   categoryId: string;
+  subcategoryId?: string | null;
   sortOrder: number;
   name: string;
   description?: string | null;
@@ -18,10 +19,19 @@ export type CatalogProduct = {
   variants: CatalogVariant[];
 };
 
-export type CatalogCategory = {
+export type CatalogSubcategory = {
   id: string;
+  slug?: string | null;
   sortOrder: number;
   name: string;
+};
+
+export type CatalogCategory = {
+  id: string;
+  slug?: string | null;
+  sortOrder: number;
+  name: string;
+  subcategories: CatalogSubcategory[];
   products: CatalogProduct[];
 };
 
@@ -79,3 +89,22 @@ export const buildSearchEntries = (
       searchText,
     };
   });
+
+export const filterCatalog = (
+  categories: CatalogCategory[],
+  selectedCategoryId: string,
+  selectedSubcategoryId: string
+) => {
+  const filtered =
+    selectedCategoryId === 'all'
+      ? categories
+      : categories.filter((category) => category.id === selectedCategoryId);
+
+  if (selectedSubcategoryId === 'all') return filtered;
+  return filtered
+    .map((category) => ({
+      ...category,
+      products: category.products.filter((product) => product.subcategoryId === selectedSubcategoryId),
+    }))
+    .filter((category) => category.products.length > 0);
+};

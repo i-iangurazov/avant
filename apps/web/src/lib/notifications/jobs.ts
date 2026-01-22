@@ -1,4 +1,4 @@
-import { prisma, Prisma } from '@qr/db';
+import { prisma, Prisma } from '@plumbing/db';
 import { formatPrice } from '@/lib/avantech/format';
 import {
   buildOrderItemsSummary,

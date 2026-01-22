@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -39,12 +39,15 @@ export default function CartDrawer({
   const t = useTranslations('avantech');
 
   return (
-    <SheetContent side="bottom" className="rounded-t-3xl border-t border-border px-0 pb-0">
-      <SheetHeader className="px-6">
+    <SheetContent
+      side="bottom"
+      className="max-h-[90vh] w-screen max-w-none rounded-t-3xl border-t border-border px-0 pb-0"
+    >
+      <SheetHeader className="px-6 pb-2 pt-6">
         <SheetTitle className="text-lg">{t('cart.title')}</SheetTitle>
-        <p className="text-sm text-muted-foreground">{t('cart.subtitle')}</p>
+        <SheetDescription>{t('cart.subtitle')}</SheetDescription>
       </SheetHeader>
-      <ScrollArea className="max-h-[50vh] px-6">
+      <ScrollArea className="flex-1 min-h-0 px-6">
         {lines.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
             {t('cart.empty')}
@@ -86,12 +89,10 @@ export default function CartDrawer({
           </div>
           <Button
             type="button"
+            size="lg"
             onClick={onOrder}
             disabled={lines.length === 0 || isOrdering}
-            className={cn(
-              'h-12 rounded-full px-6 text-sm font-semibold',
-              lines.length === 0 && 'cursor-not-allowed'
-            )}
+            className={cn('rounded-xl px-6 text-sm font-semibold', lines.length === 0 && 'cursor-not-allowed')}
           >
             {isOrdering ? t('cart.sending') : t('cart.order')}
           </Button>

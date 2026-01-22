@@ -4,22 +4,18 @@ type Props = {
   totalLabel: string;
   totalPrice: string;
   itemCount: number;
-  orderLabel: string;
-  sendingLabel: string;
-  isOrdering: boolean;
+  cartLabel: string;
   disabled?: boolean;
-  onOrder: () => void;
+  onOpenCart: () => void;
 };
 
 export default function FloatingCartBar({
   totalLabel,
   totalPrice,
   itemCount,
-  orderLabel,
-  sendingLabel,
-  isOrdering,
+  cartLabel,
   disabled,
-  onOrder,
+  onOpenCart,
 }: Props) {
   return (
     <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-40 w-[min(640px,calc(100%-2rem))] -translate-x-1/2">
@@ -31,15 +27,18 @@ export default function FloatingCartBar({
           <div className="text-lg font-semibold text-foreground">{totalPrice}</div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-[#432587]/10 px-2 py-1 text-xs font-semibold text-[#432587]">
-            {itemCount}
-          </span>
           <Button
-            className="h-11 rounded-full bg-[#FF2800] px-5 text-sm font-semibold text-white hover:bg-[#e62500]"
-            onClick={onOrder}
-            disabled={disabled || isOrdering}
+            size="lg"
+            className="rounded-xl px-5 text-sm font-semibold"
+            onClick={onOpenCart}
+            disabled={disabled}
           >
-            {isOrdering ? sendingLabel : orderLabel}
+            <span>{cartLabel}</span>
+            {itemCount > 0 && (
+              <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">
+                {itemCount}
+              </span>
+            )}
           </Button>
         </div>
       </div>

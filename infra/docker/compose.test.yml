@@ -1,0 +1,16 @@
+services:
+  plumbing_postgres_test:
+    image: postgres:16
+    container_name: plumbing_postgres_test
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: plumbing_store_test
+    ports:
+      - "5432:5432"
+    volumes:
+      - plumbing_pgdata_test:/var/lib/postgresql/data
+
+volumes:
+  plumbing_pgdata_test:

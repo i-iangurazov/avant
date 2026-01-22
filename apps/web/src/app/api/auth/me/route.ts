@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@qr/db';
+import { prisma } from '@plumbing/db';
 import { buildClearSessionCookie, buildSessionCookie, getSessionData } from '@/lib/auth/session';
 import { toAuthUser } from '@/lib/auth/user';
 

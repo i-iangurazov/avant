@@ -1,4 +1,4 @@
-import { prisma } from '@qr/db';
+import { prisma } from '@plumbing/db';
 import { slugify } from '../apps/web/src/lib/importer/slug';
 
 type Translation = { locale: string; name: string };

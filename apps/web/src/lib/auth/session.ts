@@ -2,7 +2,7 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 import { createHash, randomBytes } from 'crypto';
-import { prisma } from '@qr/db';
+import { prisma } from '@plumbing/db';
 
 const SESSION_COOKIE = 'session';
 const SESSION_TTL_DAYS = 180;

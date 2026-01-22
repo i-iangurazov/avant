@@ -29,8 +29,8 @@ export default function VariantChips({ variants, selectedVariantId, onSelect, fo
             className={cn(
               'flex min-h-[44px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition',
               isSelected
-                ? 'border-[#FF2800] bg-[#FF2800] text-white shadow-sm'
-                : 'border-border bg-white text-foreground hover:border-[#FF2800]/40 hover:bg-[#FF2800]/5'
+                ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                : 'border-border bg-white text-foreground hover:border-primary/40 hover:bg-primary/5'
             )}
           >
             <span>{label}</span>

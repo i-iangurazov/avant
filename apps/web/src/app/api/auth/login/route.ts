@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@qr/db';
+import { prisma } from '@plumbing/db';
 import { isValidPhone } from '@/lib/auth/validation';
 import { buildSessionCookie, createSession } from '@/lib/auth/session';
 import { toAuthUser } from '@/lib/auth/user';
@@ -84,6 +84,13 @@ export async function POST(request: Request) {
     response.cookies.set(cookie.name, cookie.value, cookie.options);
     return response;
   } catch (error) {
-    return NextResponse.json({ code: 'errors.generic' }, { status: 500 });
+    const detail = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      {
+        code: 'errors.generic',
+        ...(process.env.NODE_ENV !== 'production' ? { detail } : {}),
+      },
+      { status: 500 }
+    );
   }
 }

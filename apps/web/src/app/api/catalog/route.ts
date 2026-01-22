@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma, Locale } from '@qr/db';
+import { prisma, Locale } from '@plumbing/db';
 import { isLanguage } from '@/lib/i18n';
 
 type Translation = { locale: Locale } & Record<string, unknown>;
@@ -26,6 +26,11 @@ export async function GET(request: Request) {
     orderBy: { sortOrder: 'asc' },
     include: {
       translations: { where: { locale: { in: translationLocales } } },
+      subcategories: {
+        where: { isActive: true },
+        orderBy: { sortOrder: 'asc' },
+        include: { translations: { where: { locale: { in: translationLocales } } } },
+      },
       products: {
         where: { isActive: true },
         orderBy: { sortOrder: 'asc' },
@@ -45,13 +50,24 @@ export async function GET(request: Request) {
     const categoryTranslation = pickTranslation(category.translations, locale);
     return {
       id: category.id,
+      slug: category.slug ?? null,
       sortOrder: category.sortOrder,
       name: categoryTranslation?.name ?? category.id,
+      subcategories: category.subcategories.map((subcategory) => {
+        const subTranslation = pickTranslation(subcategory.translations, locale);
+        return {
+          id: subcategory.id,
+          slug: subcategory.slug ?? null,
+          sortOrder: subcategory.sortOrder,
+          name: subTranslation?.name ?? subcategory.id,
+        };
+      }),
       products: category.products.map((product) => {
         const productTranslation = pickTranslation(product.translations, locale);
         return {
           id: product.id,
           categoryId: product.categoryId,
+          subcategoryId: product.subcategoryId ?? null,
           sortOrder: product.sortOrder,
           name: productTranslation?.name ?? product.id,
           description: productTranslation?.description ?? null,

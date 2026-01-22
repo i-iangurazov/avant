@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { isValidPhone } from '@/lib/auth/validation';
-import { cn } from '@/lib/utils';
 
 type ErrorState = { scope: 'auth' | 'errors'; key: string } | null;
 
@@ -81,8 +81,7 @@ export default function LoginForm() {
       </CardHeader>
       <CardContent className="space-y-4 px-6">
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <label className="flex flex-col gap-2 text-sm font-medium text-foreground">
-            {tAuth('phoneLabel')}
+          <Field label={tAuth('phoneLabel')}>
             <Input
               value={phone}
               onChange={(event) => {
@@ -93,11 +92,9 @@ export default function LoginForm() {
               autoComplete="tel"
               inputMode="tel"
               aria-invalid={Boolean(errorMessage)}
-              className={cn('h-11 rounded-2xl', error && 'border-destructive/60 focus-visible:ring-destructive/30')}
             />
-          </label>
-          <label className="flex flex-col gap-2 text-sm font-medium text-foreground">
-            {tAuth('passwordLabel')}
+          </Field>
+          <Field label={tAuth('passwordLabel')}>
             <Input
               value={password}
               onChange={(event) => {
@@ -108,15 +105,14 @@ export default function LoginForm() {
               type="password"
               autoComplete="current-password"
               aria-invalid={Boolean(errorMessage)}
-              className={cn('h-11 rounded-2xl', error && 'border-destructive/60 focus-visible:ring-destructive/30')}
             />
-          </label>
+          </Field>
           {errorMessage && (
             <div role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
               {errorMessage}
             </div>
           )}
-          <Button type="submit" className="h-11 w-full rounded-full text-sm font-semibold" disabled={isSubmitting}>
+          <Button type="submit" className="h-11 w-full rounded-xl text-sm font-semibold" disabled={isSubmitting}>
             {isSubmitting ? tAuth('submitting') : tAuth('submit')}
           </Button>
         </form>

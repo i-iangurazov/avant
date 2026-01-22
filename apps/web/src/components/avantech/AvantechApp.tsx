@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { useLanguage } from '@/lib/useLanguage';
-import { CartProvider, useCart } from '@/lib/avantech/cart';
+import { type CartItemInput, useCartStore } from '@/lib/cart/cartStore';
 import {
   buildSearchEntries,
   indexCatalog,
+  filterCatalog,
   type CatalogCategory,
   type CatalogResponse,
   type SearchEntry,
@@ -18,6 +20,8 @@ import CategorySection from './CategorySection';
 import ProductCard from './ProductCard';
 import FloatingCartBar from './FloatingCartBar';
 import { Button } from '@/components/ui/button';
+import { Sheet } from '@/components/ui/sheet';
+import CartDrawer from './CartDrawer';
 
 const HIGHLIGHT_MS = 1200;
 
@@ -34,16 +38,28 @@ function AvantechContent() {
   const t = useTranslations('avantech');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
-  const { items, increment, decrement, clear, setQuantity } = useCart();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchParamsString = searchParams.toString();
+  const items = useCartStore((state) => state.items);
+  const addToCart = useCartStore((state) => state.addToCart);
+  const decrement = useCartStore((state) => state.decrement);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const setQuantity = useCartStore((state) => state.setQuantity);
+  const clear = useCartStore((state) => state.clear);
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
   const [catalogError, setCatalogError] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const [isOrdering, setIsOrdering] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [highlightedProductId, setHighlightedProductId] = useState<string | null>(null);
   const [autoSelectVariantId, setAutoSelectVariantId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState('all');
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState('all');
   const highlightTimerRef = useRef<number | null>(null);
+  const didSyncSelection = useRef(false);
 
   const currencyLabel = tCommon('labels.currency');
   const formatPriceLocalized = (amount: number) => formatPrice(amount, lang, currencyLabel);
@@ -85,17 +101,105 @@ function AvantechContent() {
 
   const { productsById, variantsById } = useMemo(() => indexCatalog(categories), [categories]);
 
-  useEffect(() => {
-    if (selectedCategoryId === 'all') return;
-    if (!categories.some((category) => category.id === selectedCategoryId)) {
-      setSelectedCategoryId('all');
-    }
-  }, [categories, selectedCategoryId]);
+  const categoryById = useMemo(
+    () => new Map(categories.map((category) => [category.id, category])),
+    [categories]
+  );
+  const categoryBySlug = useMemo(
+    () => new Map(categories.map((category) => [category.slug ?? category.id, category])),
+    [categories]
+  );
+  const subcategoryById = useMemo(() => {
+    const map = new Map<string, { id: string; slug?: string | null; categoryId: string }>();
+    categories.forEach((category) => {
+      category.subcategories.forEach((subcategory) => {
+        map.set(subcategory.id, { ...subcategory, categoryId: category.id });
+      });
+    });
+    return map;
+  }, [categories]);
+  const subcategoryBySlug = useMemo(() => {
+    const map = new Map<string, { id: string; slug?: string | null; categoryId: string }>();
+    categories.forEach((category) => {
+      category.subcategories.forEach((subcategory) => {
+        map.set(subcategory.slug ?? subcategory.id, { ...subcategory, categoryId: category.id });
+      });
+    });
+    return map;
+  }, [categories]);
 
-  const visibleCategories = useMemo(() => {
-    if (selectedCategoryId === 'all') return categories;
-    return categories.filter((category) => category.id === selectedCategoryId);
-  }, [categories, selectedCategoryId]);
+  useEffect(() => {
+    if (!categories.length) return;
+    const params = new URLSearchParams(searchParamsString);
+    const categoryParam = params.get('category');
+    const subcategoryParam = params.get('subcategory');
+    const matchedCategory = categoryParam
+      ? categoryBySlug.get(categoryParam) ?? categoryById.get(categoryParam)
+      : null;
+    const matchedSubcategory = subcategoryParam
+      ? subcategoryBySlug.get(subcategoryParam) ?? subcategoryById.get(subcategoryParam)
+      : null;
+
+    setSelectedCategoryId(matchedCategory ? matchedCategory.id : 'all');
+    if (matchedSubcategory && (!matchedCategory || matchedSubcategory.categoryId === matchedCategory.id)) {
+      setSelectedSubcategoryId(matchedSubcategory.id);
+    } else {
+      setSelectedSubcategoryId('all');
+    }
+    didSyncSelection.current = true;
+  }, [categories, categoryById, categoryBySlug, searchParamsString, subcategoryById, subcategoryBySlug]);
+
+  useEffect(() => {
+    if (selectedCategoryId === 'all') {
+      if (selectedSubcategoryId !== 'all') setSelectedSubcategoryId('all');
+      return;
+    }
+    const category = categoryById.get(selectedCategoryId);
+    if (!category) {
+      setSelectedCategoryId('all');
+      setSelectedSubcategoryId('all');
+      return;
+    }
+    if (
+      selectedSubcategoryId !== 'all' &&
+      !category.subcategories.some((subcategory) => subcategory.id === selectedSubcategoryId)
+    ) {
+      setSelectedSubcategoryId('all');
+    }
+  }, [categoryById, selectedCategoryId, selectedSubcategoryId]);
+
+  useEffect(() => {
+    if (!didSyncSelection.current) return;
+    const params = new URLSearchParams(searchParamsString);
+    if (selectedCategoryId === 'all') {
+      params.delete('category');
+    } else {
+      const slug = categoryById.get(selectedCategoryId)?.slug ?? selectedCategoryId;
+      params.set('category', slug);
+    }
+    if (selectedSubcategoryId === 'all') {
+      params.delete('subcategory');
+    } else {
+      const slug = subcategoryById.get(selectedSubcategoryId)?.slug ?? selectedSubcategoryId;
+      params.set('subcategory', slug);
+    }
+    const nextQuery = params.toString();
+    if (nextQuery === searchParamsString) return;
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+  }, [
+    categoryById,
+    pathname,
+    router,
+    searchParamsString,
+    selectedCategoryId,
+    selectedSubcategoryId,
+    subcategoryById,
+  ]);
+
+  const visibleCategories = useMemo(
+    () => filterCatalog(categories, selectedCategoryId, selectedSubcategoryId),
+    [categories, selectedCategoryId, selectedSubcategoryId]
+  );
 
   const visibleVariants = useMemo(
     () => visibleCategories.flatMap((category) => category.products.flatMap((product) => product.variants)),
@@ -107,28 +211,34 @@ function AvantechContent() {
     [categories]
   );
 
+  const selectedCategory = useMemo(
+    () => categories.find((category) => category.id === selectedCategoryId) ?? null,
+    [categories, selectedCategoryId]
+  );
+
+  const subcategoryOptions = useMemo(
+    () => selectedCategory?.subcategories.map((subcategory) => ({ id: subcategory.id, name: subcategory.name })) ?? [],
+    [selectedCategory]
+  );
+
   const searchEntries = useMemo(() => {
     if (isLoadingCatalog || catalogError) return [];
     return buildSearchEntries(visibleVariants, productsById);
   }, [catalogError, isLoadingCatalog, productsById, visibleVariants]);
 
-  const cartLines = useMemo<CartLine[]>(() => {
-    return Object.entries(items).reduce<CartLine[]>((acc, [variantId, quantity]) => {
-      if (quantity <= 0) return acc;
-      const variant = variantsById[variantId];
-      if (!variant) return acc;
-      const product = productsById[variant.productId];
-      if (!product) return acc;
-      acc.push({
-        variantId,
-        productName: product.name,
-        variantLabel: variant.label,
-        unitPrice: variant.price,
-        quantity,
-      });
-      return acc;
-    }, []);
-  }, [items, productsById, variantsById]);
+  const cartLines = useMemo<CartLine[]>(
+    () =>
+      Object.values(items)
+        .filter((item) => item.quantity > 0)
+        .map((item) => ({
+          variantId: item.variantId,
+          productName: item.productName,
+          variantLabel: item.variantLabel,
+          unitPrice: item.price,
+          quantity: item.quantity,
+        })),
+    [items]
+  );
 
   const totalPriceNumber = useMemo(
     () => cartLines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0),
@@ -169,6 +279,7 @@ function AvantechContent() {
   const handleOrder = async () => {
     if (cartLines.length === 0 || isOrdering) return;
     setIsOrdering(true);
+    let didSucceed = false;
 
     try {
       const response = await fetch('/api/telegram-order', {
@@ -187,15 +298,63 @@ function AvantechContent() {
 
       toastSuccess(t('cart.orderSuccess'));
       clear();
+      didSucceed = true;
     } catch (error) {
       const message = error instanceof Error ? error.message : t('cart.orderFailed');
       toastError(message);
     } finally {
+      if (didSucceed) {
+        setIsCartOpen(false);
+      }
       setIsOrdering(false);
     }
   };
 
-  const getQuantity = (variantId: string) => items[variantId] ?? 0;
+  const getQuantity = (variantId: string) => items[variantId]?.quantity ?? 0;
+
+  const buildCartItemInput = (variantId: string): CartItemInput | null => {
+    const variant = variantsById[variantId];
+    if (!variant) return null;
+    const product = productsById[variant.productId];
+    if (!product) return null;
+    return {
+      variantId: variant.id,
+      productId: product.id,
+      productName: product.name,
+      variantLabel: variant.label,
+      price: variant.price,
+      imageUrl: product.imageUrl ?? null,
+    };
+  };
+
+  const handleAddToCart = (variantId: string) => {
+    const input = buildCartItemInput(variantId);
+    if (!input) return;
+    addToCart(input);
+  };
+
+  const handleSetQuantity = (variantId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeItem(variantId);
+      return;
+    }
+    if (items[variantId]) {
+      setQuantity(variantId, quantity);
+      return;
+    }
+    const input = buildCartItemInput(variantId);
+    if (!input) return;
+    addToCart({ ...input, quantity });
+  };
+
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    setSelectedSubcategoryId('all');
+  };
+
+  const handleSubcategoryChange = (subcategoryId: string) => {
+    setSelectedSubcategoryId(subcategoryId);
+  };
 
   return (
     <div className="relative min-h-screen bg-white text-foreground">
@@ -207,8 +366,11 @@ function AvantechContent() {
           onSelect={handleSearchSelect}
           formatPrice={formatPriceLocalized}
           categories={categoryOptions}
+          subcategories={subcategoryOptions}
           selectedCategoryId={selectedCategoryId}
-          onCategoryChange={setSelectedCategoryId}
+          onCategoryChange={handleCategoryChange}
+          selectedSubcategoryId={selectedSubcategoryId}
+          onSubcategoryChange={handleSubcategoryChange}
         />
         <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pb-[calc(8rem+env(safe-area-inset-bottom))] pt-6 md:px-6">
           {isLoadingCatalog ? (
@@ -221,7 +383,7 @@ function AvantechContent() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-9 rounded-full px-4 text-xs"
+                className="h-9 rounded-xl px-4 text-xs"
                 onClick={() => setReloadToken((prev) => prev + 1)}
               >
                 {tCommon('actions.refresh')}
@@ -239,7 +401,7 @@ function AvantechContent() {
                 title={category.name}
                 count={category.products.length}
               >
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {category.products.map((product) => (
                     <ProductCard
                       key={product.id}
@@ -248,8 +410,8 @@ function AvantechContent() {
                       highlight={highlightedProductId === product.id}
                       autoSelectVariantId={autoSelectVariantId}
                       getQuantity={getQuantity}
-                      setQuantity={setQuantity}
-                      onIncrement={increment}
+                      setQuantity={handleSetQuantity}
+                      onIncrement={handleAddToCart}
                       onDecrement={decrement}
                       formatPrice={formatPriceLocalized}
                     />
@@ -264,21 +426,28 @@ function AvantechContent() {
           totalLabel={t('cart.total')}
           totalPrice={formatPriceLocalized(totalPriceNumber)}
           itemCount={totalCount}
-          orderLabel={t('cart.order')}
-          sendingLabel={t('cart.sending')}
-          isOrdering={isOrdering}
+          cartLabel={t('cart.title')}
           disabled={cartLines.length === 0}
-          onOrder={handleOrder}
+          onOpenCart={() => setIsCartOpen(true)}
         />
       </div>
+
+      <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+        <CartDrawer
+          lines={cartLines}
+          totalPrice={formatPriceLocalized(totalPriceNumber)}
+          formatPrice={formatPriceLocalized}
+          onIncrement={handleAddToCart}
+          onDecrement={decrement}
+          onSetQuantity={handleSetQuantity}
+          onOrder={handleOrder}
+          isOrdering={isOrdering}
+        />
+      </Sheet>
     </div>
   );
 }
 
 export default function AvantechApp() {
-  return (
-    <CartProvider>
-      <AvantechContent />
-    </CartProvider>
-  );
+  return <AvantechContent />;
 }
