@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
-import { Eye, EyeOff, Pencil, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Copy, Eye, EyeOff, Pencil, Plus, Search, Trash2, Upload } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
@@ -10,6 +10,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { toastError } from '@/lib/toast';
 import {
   AdminClearButton,
   AdminEmptyState,
@@ -75,6 +76,8 @@ export default function ProductsAdmin() {
   const [searchValue, setSearchValue] = useState('');
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
@@ -85,6 +88,9 @@ export default function ProductsAdmin() {
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const productActiveId = useId();
   const formId = useId();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const dragCounter = useRef(0);
+  const [isDragActive, setIsDragActive] = useState(false);
 
   const [form, setForm] = useState({
     id: '',
@@ -167,6 +173,23 @@ export default function ProductsAdmin() {
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
+
+  useEffect(() => {
+    if (selectedIds.size === 0) return;
+    const available = new Set(items.map((item) => item.id));
+    const next = new Set<string>();
+    let changed = false;
+    for (const id of selectedIds) {
+      if (available.has(id)) {
+        next.add(id);
+      } else {
+        changed = true;
+      }
+    }
+    if (changed) {
+      setSelectedIds(next);
+    }
+  }, [items, selectedIds]);
 
   const resetForm = () => {
     setForm({
@@ -299,21 +322,37 @@ export default function ProductsAdmin() {
     }
   };
 
-  const handleUpload = async () => {
-    if (!formFile) return;
+  const validateImageFile = useCallback((file: File) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      return 'Допустимы только изображения JPEG, PNG или WebP.';
+    }
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return 'Размер файла не должен превышать 5 МБ.';
+    }
+    return null;
+  }, []);
+
+  const uploadImageFile = useCallback(async (file: File) => {
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
     setFormUploading(true);
     setFormError(null);
     setUploadNotice(null);
     try {
       const formData = new FormData();
-      formData.append('file', formFile);
+      formData.append('file', file);
       const response = await fetch('/api/admin/products/upload-image', {
         method: 'POST',
         body: formData,
       });
       const payload = (await response.json().catch(() => null)) as { url?: string; message?: string } | null;
       if (!response.ok || !payload?.url) {
-        setFormError('Не удалось загрузить изображение.');
+        setFormError(payload?.message ?? 'Не удалось загрузить изображение.');
         return;
       }
       setForm((prev) => ({ ...prev, imageUrl: payload.url ?? prev.imageUrl }));
@@ -324,7 +363,83 @@ export default function ProductsAdmin() {
     } finally {
       setFormUploading(false);
     }
+  }, [validateImageFile]);
+
+  const handleUpload = async () => {
+    if (!formFile) return;
+    await uploadImageFile(formFile);
   };
+
+  useEffect(() => {
+    if (!dialogOpen) {
+      setIsDragActive(false);
+      dragCounter.current = 0;
+      return;
+    }
+
+    const hasFiles = (event: DragEvent) =>
+      Array.from(event.dataTransfer?.types ?? []).includes('Files');
+
+    const handleDragEnter = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      dragCounter.current += 1;
+      setIsDragActive(true);
+    };
+
+    const handleDragOver = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = 'copy';
+      }
+    };
+
+    const handleDragLeave = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      dragCounter.current -= 1;
+      if (dragCounter.current <= 0) {
+        dragCounter.current = 0;
+        setIsDragActive(false);
+      }
+    };
+
+    const handleDrop = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      dragCounter.current = 0;
+      setIsDragActive(false);
+      const file = event.dataTransfer?.files?.[0];
+      if (file) {
+        void uploadImageFile(file);
+      }
+    };
+
+    window.addEventListener('dragenter', handleDragEnter);
+    window.addEventListener('dragover', handleDragOver);
+    window.addEventListener('dragleave', handleDragLeave);
+    window.addEventListener('drop', handleDrop);
+
+    return () => {
+      window.removeEventListener('dragenter', handleDragEnter);
+      window.removeEventListener('dragover', handleDragOver);
+      window.removeEventListener('dragleave', handleDragLeave);
+      window.removeEventListener('drop', handleDrop);
+    };
+  }, [dialogOpen, uploadImageFile]);
+
+  useEffect(() => {
+    if (!isDragActive) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      dragCounter.current = 0;
+      setIsDragActive(false);
+    };
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
+  }, [isDragActive]);
 
   const handleToggle = async (item: ProductListItem) => {
     try {
@@ -358,9 +473,113 @@ export default function ProductsAdmin() {
   };
 
   const handleDelete = async (item: ProductListItem) => {
-    if (!confirm(`Отключить товар «${item.name}»?`)) return;
-    await fetch(`/api/admin/products/${item.id}`, { method: 'DELETE' });
+    if (!confirm(`Удалить товар «${item.name}»? Это действие нельзя отменить.`)) return;
+    try {
+      const response = await fetch(`/api/admin/products/${item.id}`, { method: 'DELETE' });
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+      if (!response.ok) {
+        toastError(payload?.message ?? 'Не удалось удалить товар.');
+        return;
+      }
+      setSelectedIds((prev) => {
+        if (!prev.has(item.id)) return prev;
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+      await loadProducts();
+    } catch {
+      toastError('Не удалось удалить товар.');
+    }
+  };
+
+  const handleDuplicate = async (item: ProductListItem) => {
+    try {
+      const response = await fetch(`/api/admin/products/${item.id}/duplicate`, { method: 'POST' });
+      const payload = (await response.json().catch(() => null)) as
+        | { product?: ProductListItem; message?: string }
+        | null;
+      if (!response.ok || !payload?.product) {
+        toastError(payload?.message ?? 'Не удалось продублировать товар.');
+        return;
+      }
+      setTotal((prev) => prev + 1);
+      if (page === 1) {
+        setItems((prev) => [payload.product as ProductListItem, ...prev].slice(0, pageSize));
+        await loadProducts();
+      } else {
+        setPage(1);
+      }
+    } catch {
+      toastError('Не удалось продублировать товар.');
+    }
+  };
+
+  const selectedCount = selectedIds.size;
+  const allSelected = items.length > 0 && items.every((item) => selectedIds.has(item.id));
+  const someSelected = items.some((item) => selectedIds.has(item.id));
+
+  const toggleAll = (checked: boolean | 'indeterminate') => {
+    const shouldSelect = checked === true;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const item of items) {
+        if (shouldSelect) {
+          next.add(item.id);
+        } else {
+          next.delete(item.id);
+        }
+      }
+      return next;
+    });
+  };
+
+  const toggleOne = (id: string, checked: boolean | 'indeterminate') => {
+    const shouldSelect = checked === true;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (shouldSelect) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    if (!confirm(`Удалить выбранные товары (${ids.length})? Это действие нельзя отменить.`)) return;
+    setBulkDeleting(true);
+    const failures: string[] = [];
+    const remaining = new Set(selectedIds);
+
+    for (const id of ids) {
+      try {
+        const response = await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+        if (!response.ok) {
+          failures.push(payload?.message ?? 'Не удалось удалить товар.');
+        } else {
+          remaining.delete(id);
+        }
+      } catch {
+        failures.push('Не удалось удалить товар.');
+      }
+    }
+
+    setSelectedIds(remaining);
     await loadProducts();
+    setBulkDeleting(false);
+
+    if (failures.length > 0) {
+      toastError(`Не удалось удалить ${failures.length} товар(ов).`, { description: failures[0] });
+    }
   };
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -455,6 +674,36 @@ export default function ProductsAdmin() {
             </div>
           )}
 
+          {selectedCount > 0 && (
+            <div className="flex flex-col gap-2 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="font-medium text-foreground">Выбрано: {selectedCount}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                >
+                  <Trash2 className="size-4" />
+                  {bulkDeleting ? 'Удаление...' : 'Удалить'}
+                </Button>
+                <Button variant="outline" onClick={clearSelection} disabled={bulkDeleting}>
+                  Снять выделение
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!isLoading && items.length > 0 && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground md:hidden">
+              <Checkbox
+                checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                onCheckedChange={toggleAll}
+                aria-label="Выбрать все товары на странице"
+              />
+              <span>Выбрать все на странице</span>
+            </div>
+          )}
+
           {isLoading ? (
             <AdminListSkeleton rows={4} />
           ) : items.length === 0 ? (
@@ -475,6 +724,16 @@ export default function ProductsAdmin() {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
                       <tr>
+                        <th className="px-4 py-3 text-left">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                              onCheckedChange={toggleAll}
+                              aria-label="Выбрать все товары на странице"
+                            />
+                            <span className="text-[10px] uppercase text-muted-foreground">Все на странице</span>
+                          </div>
+                        </th>
                         <th className="px-4 py-3 text-left">Товар</th>
                         <th className="px-4 py-3 text-left">Категория</th>
                         <th className="px-4 py-3 text-left">Варианты</th>
@@ -485,6 +744,13 @@ export default function ProductsAdmin() {
                     <tbody className="divide-y divide-border/60">
                       {items.map((item) => (
                         <tr key={item.id} className={item.isActive ? '' : 'opacity-60'}>
+                          <td className="px-4 py-3">
+                            <Checkbox
+                              checked={selectedIds.has(item.id)}
+                              onCheckedChange={(checked) => toggleOne(item.id, checked)}
+                              aria-label={`Выбрать товар ${item.name}`}
+                            />
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <div className="h-12 w-12 overflow-hidden rounded-lg border border-border bg-muted/20">
@@ -526,6 +792,15 @@ export default function ProductsAdmin() {
                               </IconButton>
                               <IconButton
                                 size="icon-sm"
+                                variant="outline"
+                                onClick={() => handleDuplicate(item)}
+                                aria-label="Дублировать товар"
+                                title="Дублировать товар"
+                              >
+                                <Copy className="size-4" />
+                              </IconButton>
+                              <IconButton
+                                size="icon-sm"
                                 variant="secondary"
                                 onClick={() => handleToggle(item)}
                                 aria-label={item.isActive ? 'Отключить товар' : 'Включить товар'}
@@ -559,26 +834,33 @@ export default function ProductsAdmin() {
                       className={`rounded-xl border border-border/60 bg-white p-4 shadow-sm ${item.isActive ? '' : 'opacity-60'}`}
                     >
                       <div className="flex flex-col gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 overflow-hidden rounded-lg border border-border bg-muted/20">
-                            {item.imageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase text-muted-foreground">
-                                Нет фото
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 overflow-hidden rounded-lg border border-border bg-muted/20">
+                              {item.imageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase text-muted-foreground">
+                                  Нет фото
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <div className="text-sm font-semibold text-foreground">{item.name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {item.category.name}{item.subcategory ? ` · ${item.subcategory.name}` : ''}
                               </div>
-                            )}
-                          </div>
-                          <div>
-                            <div className="text-sm font-semibold text-foreground">{item.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {item.category.name}{item.subcategory ? ` · ${item.subcategory.name}` : ''}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              Варианты: {item.variantCount}
+                              <div className="text-xs text-muted-foreground">
+                                Варианты: {item.variantCount}
+                              </div>
                             </div>
                           </div>
+                          <Checkbox
+                            checked={selectedIds.has(item.id)}
+                            onCheckedChange={(checked) => toggleOne(item.id, checked)}
+                            aria-label={`Выбрать товар ${item.name}`}
+                          />
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge variant={item.isActive ? 'secondary' : 'outline'}>
@@ -592,6 +874,15 @@ export default function ProductsAdmin() {
                             title="Редактировать товар"
                           >
                             <Pencil className="size-4" />
+                          </IconButton>
+                          <IconButton
+                            size="icon-sm"
+                            variant="outline"
+                            onClick={() => handleDuplicate(item)}
+                            aria-label="Дублировать товар"
+                            title="Дублировать товар"
+                          >
+                            <Copy className="size-4" />
                           </IconButton>
                           <IconButton
                             size="icon-sm"
@@ -728,23 +1019,56 @@ export default function ProductsAdmin() {
               </Field>
               <Field label="Загрузка изображения">
                 <div className="space-y-2">
-                  <Input
+                  <button
+                    type="button"
+                    className="group relative flex h-32 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-muted/20 text-xs font-medium text-muted-foreground transition hover:border-brandTint/60 hover:bg-brandTint/10"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {form.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={form.imageUrl}
+                        alt="Превью"
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    ) : null}
+                    <span className="relative z-10">
+                      {form.imageUrl ? 'Нажмите, чтобы заменить' : 'Нажмите или перетащите файл'}
+                    </span>
+                  </button>
+                  <input
+                    ref={fileInputRef}
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
                     onChange={(event) => {
                       setFormFile(event.target.files?.[0] ?? null);
                       setUploadNotice(null);
                     }}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleUpload}
-                    disabled={!formFile || formUploading}
-                  >
-                    <Upload className="size-4" />
-                    {formUploading ? 'Загрузка...' : 'Загрузить'}
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={formUploading}
+                    >
+                      <Upload className="size-4" />
+                      Выбрать файл
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleUpload}
+                      disabled={!formFile || formUploading}
+                    >
+                      <Upload className="size-4" />
+                      {formUploading ? 'Загрузка...' : 'Загрузить'}
+                    </Button>
+                  </div>
+                  {formFile ? (
+                    <div className="text-xs text-muted-foreground">Файл: {formFile.name}</div>
+                  ) : null}
                   {uploadNotice ? (
                     <div className="text-xs font-medium text-emerald-600">{uploadNotice}</div>
                   ) : null}
@@ -854,6 +1178,14 @@ export default function ProductsAdmin() {
           </form>
         )}
       </AdminModal>
+
+      {dialogOpen && isDragActive && (
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="rounded-2xl border border-white/20 bg-white/90 px-6 py-4 text-sm font-semibold text-foreground shadow-xl">
+            Drop to upload
+          </div>
+        </div>
+      )}
     </AdminPageShell>
   );
 }

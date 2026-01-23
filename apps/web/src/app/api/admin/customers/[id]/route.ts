@@ -157,7 +157,18 @@ export async function DELETE(
     return jsonError({ code: 'not_found', message: 'Customer not found.' }, 404);
   }
 
-  await prisma.user.update({ where: { id }, data: { isActive: false } });
+  const ordersCount = await prisma.storeOrder.count({ where: { userId: id } });
+  if (ordersCount > 0) {
+    return jsonError(
+      { code: 'customer_has_orders', message: 'Нельзя удалить клиента с заказами.' },
+      409
+    );
+  }
+
+  await prisma.$transaction([
+    prisma.session.deleteMany({ where: { userId: id } }),
+    prisma.user.delete({ where: { id } }),
+  ]);
 
   return jsonOk({ customerId: id });
 }

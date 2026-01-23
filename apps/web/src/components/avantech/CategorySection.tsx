@@ -28,7 +28,7 @@ export default function CategorySection({
   titleClassName,
   countClassName,
   contentClassName,
-  defaultOpen = true,
+  defaultOpen = false,
   onOpenChange,
 }: Props) {
   const [isOpen, setIsOpen] = useState(defaultOpen);

@@ -64,11 +64,12 @@ function AvantechContent() {
   const highlightTimerRef = useRef<number | null>(null);
   const didSyncSelection = useRef(false);
   const sectionStateRef = useRef<Record<string, boolean>>({});
+  const cartRefreshRef = useRef(0);
 
   const currencyLabel = tCommon('labels.currency');
   const formatPriceLocalized = (amount: number) => formatPrice(amount, lang, currencyLabel);
   const formatTitleCase = useCallback((value: string) => formatDisplayTitle(value, lang), [lang]);
-  const getSectionState = useCallback((key: string, fallback = true) => {
+  const getSectionState = useCallback((key: string, fallback = false) => {
     const stored = sectionStateRef.current[key];
     return typeof stored === 'boolean' ? stored : fallback;
   }, []);
@@ -372,6 +373,14 @@ function AvantechContent() {
     setSelectedSubcategoryId(subcategoryId);
   };
 
+  useEffect(() => {
+    if (!isCartOpen) return;
+    const now = Date.now();
+    if (now - cartRefreshRef.current < 60_000) return;
+    cartRefreshRef.current = now;
+    setReloadToken((prev) => prev + 1);
+  }, [isCartOpen]);
+
   return (
     <div className="relative min-h-screen bg-white text-foreground">
       <PwaAutoReload isBusy={isCartOpen || isOrdering} />
@@ -418,7 +427,7 @@ function AvantechContent() {
                 title={category.name}
                 count={category.products.length}
                 contentClassName="mt-0"
-                defaultOpen={getSectionState(`category:${category.id}`, true)}
+                defaultOpen={getSectionState(`category:${category.id}`, false)}
                 onOpenChange={(open) => setSectionState(`category:${category.id}`, open)}
               >
                 <div className="flex flex-col gap-6">
@@ -457,7 +466,7 @@ function AvantechContent() {
                         titleClassName="text-sm md:text-base"
                         countClassName="px-2 py-0.5 text-[11px]"
                         contentClassName="mt-0"
-                        defaultOpen={getSectionState(`subcategory:${group.id}`, true)}
+                        defaultOpen={getSectionState(`subcategory:${group.id}`, false)}
                         onOpenChange={(open) => setSectionState(`subcategory:${group.id}`, open)}
                       >
                         {group.products.length === 0 ? (

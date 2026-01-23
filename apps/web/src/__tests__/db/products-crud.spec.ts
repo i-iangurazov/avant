@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { prisma } from '@plumbing/db';
+import { prisma, Locale } from '@plumbing/db';
 import { POST as createProduct } from '@/app/api/admin/products/route';
 import { PATCH as updateProduct } from '@/app/api/admin/products/[id]/route';
+import { POST as duplicateProduct } from '@/app/api/admin/products/[id]/duplicate/route';
 import { createAdminSession, createCategory, createClientsManagerSession } from './helpers';
 
 const jsonRequest = (url: string, token: string, body: unknown, method = 'POST') =>
@@ -104,5 +105,76 @@ describe('products admin routes', () => {
     );
 
     expect(response.status).toBe(403);
+  });
+
+  it('duplicates a product with variants', async () => {
+    const { token } = await createAdminSession();
+    const category = await createCategory({ name: 'Дубликаты' });
+
+    const original = await prisma.product.create({
+      data: {
+        categoryId: category.id,
+        subcategoryId: null,
+        sortOrder: 5,
+        slug: null,
+        imageUrl: 'https://example.com/original.png',
+        description: 'Описание',
+        isActive: false,
+        translations: {
+          create: [
+            { locale: Locale.ru, name: 'Тестовый товар', description: 'Описание' },
+            { locale: Locale.en, name: 'Test item', description: null },
+          ],
+        },
+        variants: {
+          create: [
+            {
+              price: 100,
+              priceRetail: 110,
+              sku: 'SKU-1',
+              isActive: false,
+              attributes: {},
+              translations: {
+                create: [
+                  { locale: Locale.ru, label: 'Вариант 1' },
+                  { locale: Locale.en, label: 'Variant 1' },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const response = await duplicateProduct(
+      new Request(`http://localhost/api/admin/products/${original.id}/duplicate`, {
+        method: 'POST',
+        headers: { cookie: `session=${token}` },
+      }),
+      { params: Promise.resolve({ id: original.id }) }
+    );
+
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as { product: { id: string } };
+    expect(payload.product.id).not.toBe(original.id);
+
+    const duplicated = await prisma.product.findUnique({
+      where: { id: payload.product.id },
+      include: { translations: true, variants: { include: { translations: true } } },
+    });
+
+    expect(duplicated?.isActive).toBe(true);
+    const ruTranslation = duplicated?.translations.find((t) => t.locale === Locale.ru);
+    const enTranslation = duplicated?.translations.find((t) => t.locale === Locale.en);
+    expect(ruTranslation?.name).toBe('Тестовый товар (копия)');
+    expect(enTranslation?.name).toBe('Test item');
+    expect(duplicated?.variants.length).toBe(1);
+    const variant = duplicated?.variants[0];
+    const ruLabel = variant?.translations.find((t) => t.locale === Locale.ru)?.label;
+    expect(ruLabel).toBe('Вариант 1');
+    expect(variant?.price).toBe(100);
+    expect(variant?.priceRetail).toBe(110);
+    expect(variant?.sku).toBeNull();
+    expect(variant?.isActive).toBe(true);
   });
 });

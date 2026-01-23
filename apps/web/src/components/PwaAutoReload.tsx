@@ -19,16 +19,6 @@ type Props = {
   cooldownMs?: number;
 };
 
-const getNavigationType = () => {
-  if (typeof performance === 'undefined') return 'navigate';
-  const entries = performance.getEntriesByType?.('navigation');
-  if (entries && entries.length > 0) {
-    return (entries[0] as PerformanceNavigationTiming).type;
-  }
-  const legacyType = (performance as { navigation?: { type?: number } }).navigation?.type;
-  return legacyType === 1 ? 'reload' : 'navigate';
-};
-
 const readStoredTimestamp = () => {
   if (typeof window === 'undefined') return 0;
   try {
@@ -93,6 +83,7 @@ export default function PwaAutoReload({
   const attemptRefreshRef = useRef<(reason: 'resume' | 'sw-update') => void>(() => undefined);
   const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const hasBoundSwRef = useRef(false);
+  const wasHiddenRef = useRef(false);
 
   const isSafeToRefresh = useCallback(() => !isBusy && !hasActiveFormField() && !hasOpenOverlay(), [isBusy]);
 
@@ -148,26 +139,20 @@ export default function PwaAutoReload({
     if (!enabled) return;
     if (!isStandaloneMode()) return;
 
-    const handleResume = () => {
-      if (document.visibilityState !== 'visible') return;
-      attemptRefresh('resume');
+    wasHiddenRef.current = document.visibilityState !== 'visible';
+
+    const handleVisibility = () => {
+      const isVisible = document.visibilityState === 'visible';
+      if (isVisible && wasHiddenRef.current) {
+        attemptRefresh('resume');
+      }
+      wasHiddenRef.current = !isVisible;
     };
 
-    const handleVisibility = () => handleResume();
-    const handlePageShow = () => handleResume();
-
-    if (getNavigationType() !== 'reload') {
-      handleResume();
-    } else {
-      writeStoredTimestamp(Date.now());
-    }
-
     document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('pageshow', handlePageShow);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('pageshow', handlePageShow);
       if (pendingTimerRef.current) {
         clearInterval(pendingTimerRef.current);
         pendingTimerRef.current = null;

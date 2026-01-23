@@ -10,6 +10,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { toastError } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import {
   AdminEmptyState,
@@ -54,6 +55,13 @@ type CategoryRow = {
   subcategories: SubcategoryRow[];
 };
 
+type SelectableItem = {
+  key: string;
+  type: 'category' | 'subcategory';
+  id: string;
+  name: string;
+};
+
 const SAMPLE_CSV = `category_ru;subcategory_ru\nСМЕСИТЕЛИ И КОМПЛЕКТУЮЩИЕ;джойстики\nСМЕСИТЕЛИ И КОМПЛЕКТУЮЩИЕ;картриджи\nСИФОНЫ И КОМПЛЕКТУЮЩИЕ;трапы\nСИФОНЫ И КОМПЛЕКТУЮЩИЕ;сетки\n`;
 
 const downloadSampleCsv = () => {
@@ -79,6 +87,8 @@ export default function TaxonomyAdmin() {
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [categoryForm, setCategoryForm] = useState({
@@ -108,6 +118,7 @@ export default function TaxonomyAdmin() {
   const subcategoryFormId = useId();
 
   const [expandedCategoryIds, setExpandedCategoryIds] = useState<string[]>([]);
+  const makeKey = useCallback((type: 'category' | 'subcategory', id: string) => `${type}:${id}`, []);
 
   const loadTaxonomy = useCallback(async () => {
     setIsLoadingList(true);
@@ -130,6 +141,29 @@ export default function TaxonomyAdmin() {
   useEffect(() => {
     loadTaxonomy();
   }, [loadTaxonomy]);
+
+  useEffect(() => {
+    if (selectedKeys.size === 0) return;
+    const available = new Set<string>();
+    for (const category of categories) {
+      available.add(makeKey('category', category.id));
+      for (const subcategory of category.subcategories) {
+        available.add(makeKey('subcategory', subcategory.id));
+      }
+    }
+    let changed = false;
+    const next = new Set<string>();
+    for (const key of selectedKeys) {
+      if (available.has(key)) {
+        next.add(key);
+      } else {
+        changed = true;
+      }
+    }
+    if (changed) {
+      setSelectedKeys(next);
+    }
+  }, [categories, makeKey, selectedKeys]);
 
   const resetCategoryForm = () => {
     setCategoryForm({ id: '', name: '', slug: '', sortOrder: '', isActive: true });
@@ -334,15 +368,61 @@ export default function TaxonomyAdmin() {
     }
   };
 
+  const deleteCategory = async (categoryId: string) => {
+    try {
+      const response = await fetch(`/api/admin/taxonomy/categories/${categoryId}`, { method: 'DELETE' });
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+      if (!response.ok) {
+        return payload?.message ?? 'Не удалось удалить категорию.';
+      }
+      return null;
+    } catch {
+      return 'Не удалось удалить категорию.';
+    }
+  };
+
+  const deleteSubcategory = async (subcategoryId: string) => {
+    try {
+      const response = await fetch(`/api/admin/taxonomy/subcategories/${subcategoryId}`, { method: 'DELETE' });
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+      if (!response.ok) {
+        return payload?.message ?? 'Не удалось удалить подкатегорию.';
+      }
+      return null;
+    } catch {
+      return 'Не удалось удалить подкатегорию.';
+    }
+  };
+
   const handleDeleteCategory = async (category: CategoryRow) => {
-    if (!confirm(`Отключить категорию «${category.name}»?`)) return;
-    await fetch(`/api/admin/taxonomy/categories/${category.id}`, { method: 'DELETE' });
+    if (!confirm(`Удалить категорию «${category.name}»? Это действие нельзя отменить.`)) return;
+    const errorMessage = await deleteCategory(category.id);
+    if (errorMessage) {
+      toastError(errorMessage);
+      return;
+    }
+    setSelectedKeys((prev) => {
+      if (!prev.has(makeKey('category', category.id))) return prev;
+      const next = new Set(prev);
+      next.delete(makeKey('category', category.id));
+      return next;
+    });
     await loadTaxonomy();
   };
 
   const handleDeleteSubcategory = async (subcategory: SubcategoryRow) => {
-    if (!confirm(`Отключить подкатегорию «${subcategory.name}»?`)) return;
-    await fetch(`/api/admin/taxonomy/subcategories/${subcategory.id}`, { method: 'DELETE' });
+    if (!confirm(`Удалить подкатегорию «${subcategory.name}»? Это действие нельзя отменить.`)) return;
+    const errorMessage = await deleteSubcategory(subcategory.id);
+    if (errorMessage) {
+      toastError(errorMessage);
+      return;
+    }
+    setSelectedKeys((prev) => {
+      if (!prev.has(makeKey('subcategory', subcategory.id))) return prev;
+      const next = new Set(prev);
+      next.delete(makeKey('subcategory', subcategory.id));
+      return next;
+    });
     await loadTaxonomy();
   };
 
@@ -350,6 +430,106 @@ export default function TaxonomyAdmin() {
     setExpandedCategoryIds((prev) =>
       prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]
     );
+  };
+
+  const selectableItems = useMemo<SelectableItem[]>(
+    () =>
+      categories.flatMap((category) => {
+        const items: SelectableItem[] = [
+          {
+            key: makeKey('category', category.id),
+            type: 'category',
+            id: category.id,
+            name: category.name,
+          },
+        ];
+        for (const subcategory of category.subcategories) {
+          items.push({
+            key: makeKey('subcategory', subcategory.id),
+            type: 'subcategory',
+            id: subcategory.id,
+            name: subcategory.name,
+          });
+        }
+        return items;
+      }),
+    [categories, makeKey]
+  );
+
+  const selectedCount = selectedKeys.size;
+  const allSelected =
+    selectableItems.length > 0 && selectableItems.every((item) => selectedKeys.has(item.key));
+  const someSelected = selectableItems.some((item) => selectedKeys.has(item.key));
+
+  const toggleAll = (checked: boolean | 'indeterminate') => {
+    const shouldSelect = checked === true;
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      for (const item of selectableItems) {
+        if (shouldSelect) {
+          next.add(item.key);
+        } else {
+          next.delete(item.key);
+        }
+      }
+      return next;
+    });
+  };
+
+  const toggleKey = (key: string, checked: boolean | 'indeterminate') => {
+    const shouldSelect = checked === true;
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (shouldSelect) {
+        next.add(key);
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedKeys(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedKeys.size === 0) return;
+    const count = selectedKeys.size;
+    if (!confirm(`Удалить выбранные элементы (${count})? Это действие нельзя отменить.`)) return;
+    setBulkDeleting(true);
+
+    const selectedItems = selectableItems.filter((item) => selectedKeys.has(item.key));
+    const subcategories = selectedItems.filter((item) => item.type === 'subcategory');
+    const categoriesToDelete = selectedItems.filter((item) => item.type === 'category');
+    const failures: string[] = [];
+    const remaining = new Set(selectedKeys);
+
+    for (const item of subcategories) {
+      const errorMessage = await deleteSubcategory(item.id);
+      if (errorMessage) {
+        failures.push(errorMessage);
+      } else {
+        remaining.delete(item.key);
+      }
+    }
+
+    for (const item of categoriesToDelete) {
+      const errorMessage = await deleteCategory(item.id);
+      if (errorMessage) {
+        failures.push(errorMessage);
+      } else {
+        remaining.delete(item.key);
+      }
+    }
+
+    setSelectedKeys(remaining);
+    await loadTaxonomy();
+    setBulkDeleting(false);
+
+    if (failures.length > 0) {
+      toastError(`Не удалось удалить ${failures.length} элемент(ов).`, { description: failures[0] });
+    }
   };
 
   const report = result ?? preview;
@@ -481,6 +661,36 @@ export default function TaxonomyAdmin() {
               {listError}
             </div>
           )}
+
+          {selectedCount > 0 && (
+            <div className="flex flex-col gap-2 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="font-medium text-foreground">Выбрано: {selectedCount}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                >
+                  <Trash2 className="size-4" />
+                  {bulkDeleting ? 'Удаление...' : 'Удалить'}
+                </Button>
+                <Button variant="outline" onClick={clearSelection} disabled={bulkDeleting}>
+                  Снять выделение
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!isLoadingList && categories.length > 0 && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground md:hidden">
+              <Checkbox
+                checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                onCheckedChange={toggleAll}
+                aria-label="Выбрать все категории и подкатегории на странице"
+              />
+              <span>Выбрать все на странице</span>
+            </div>
+          )}
           {isLoadingList ? (
             <AdminListSkeleton rows={4} />
           ) : categories.length === 0 ? (
@@ -501,6 +711,16 @@ export default function TaxonomyAdmin() {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
                       <tr>
+                        <th className="px-4 py-3 text-left">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                              onCheckedChange={toggleAll}
+                              aria-label="Выбрать все категории и подкатегории на странице"
+                            />
+                            <span className="text-[10px] uppercase text-muted-foreground">Все на странице</span>
+                          </div>
+                        </th>
                         <th className="px-4 py-3 text-left">Название</th>
                         <th className="px-4 py-3 text-left">Слаг</th>
                         <th className="px-4 py-3 text-left">Порядок</th>
@@ -512,6 +732,15 @@ export default function TaxonomyAdmin() {
                       {categories.map((category) => (
                         <Fragment key={category.id}>
                           <tr className={cn('bg-muted/20', !category.isActive && 'opacity-60')}>
+                            <td className="px-4 py-3">
+                              <Checkbox
+                                checked={selectedKeys.has(makeKey('category', category.id))}
+                                onCheckedChange={(checked) =>
+                                  toggleKey(makeKey('category', category.id), checked)
+                                }
+                                aria-label={`Выбрать категорию ${category.name}`}
+                              />
+                            </td>
                             <td className="px-4 py-3">
                               <div className="font-medium text-foreground">{category.name}</div>
                               <div className="text-xs text-muted-foreground">Категория</div>
@@ -569,6 +798,15 @@ export default function TaxonomyAdmin() {
                           </tr>
                           {category.subcategories.map((subcategory) => (
                             <tr key={subcategory.id} className={cn(!subcategory.isActive && 'opacity-60')}>
+                              <td className="px-4 py-3">
+                                <Checkbox
+                                  checked={selectedKeys.has(makeKey('subcategory', subcategory.id))}
+                                  onCheckedChange={(checked) =>
+                                    toggleKey(makeKey('subcategory', subcategory.id), checked)
+                                  }
+                                  aria-label={`Выбрать подкатегорию ${subcategory.name}`}
+                                />
+                              </td>
                               <td className="px-4 py-3">
                                 <div className="flex items-start gap-2 pl-6">
                                   <span className="mt-2 block size-2 rounded-full bg-muted-foreground/40" />
@@ -647,6 +885,13 @@ export default function TaxonomyAdmin() {
                           </div>
                           </div>
                           <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={selectedKeys.has(makeKey('category', category.id))}
+                              onCheckedChange={(checked) =>
+                                toggleKey(makeKey('category', category.id), checked)
+                              }
+                              aria-label={`Выбрать категорию ${category.name}`}
+                            />
                             <Badge variant={category.isActive ? 'secondary' : 'outline'}>
                               {category.isActive ? 'Активна' : 'Неактивна'}
                             </Badge>
@@ -715,11 +960,20 @@ export default function TaxonomyAdmin() {
                                     !subcategory.isActive && 'opacity-60'
                                   )}
                                 >
-                                  <div className="space-y-1">
-                                    <div className="text-sm font-medium text-foreground">{subcategory.name}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {subcategory.slug ? `Слаг: ${subcategory.slug}` : 'Слаг: —'} · Порядок: {subcategory.sortOrder}
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="space-y-1">
+                                      <div className="text-sm font-medium text-foreground">{subcategory.name}</div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {subcategory.slug ? `Слаг: ${subcategory.slug}` : 'Слаг: —'} · Порядок: {subcategory.sortOrder}
+                                      </div>
                                     </div>
+                                    <Checkbox
+                                      checked={selectedKeys.has(makeKey('subcategory', subcategory.id))}
+                                      onCheckedChange={(checked) =>
+                                        toggleKey(makeKey('subcategory', subcategory.id), checked)
+                                      }
+                                      aria-label={`Выбрать подкатегорию ${subcategory.name}`}
+                                    />
                                   </div>
                                   <div className="mt-2 flex flex-wrap items-center gap-2">
                                     <Badge variant={subcategory.isActive ? 'secondary' : 'outline'}>

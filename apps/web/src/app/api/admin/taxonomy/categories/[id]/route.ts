@@ -130,9 +130,24 @@ export async function DELETE(
     return jsonError({ code: 'invalid_id', message: 'Invalid category id.' }, 400);
   }
 
+  const existing = await prisma.category.findUnique({ where: { id } });
+  if (!existing) {
+    return jsonError({ code: 'not_found', message: 'Category not found.' }, 404);
+  }
+
+  const productCount = await prisma.product.count({ where: { categoryId: id } });
+  if (productCount > 0) {
+    return jsonError(
+      { code: 'category_has_products', message: 'Нельзя удалить категорию с товарами.' },
+      409
+    );
+  }
+
   await prisma.$transaction([
-    prisma.subcategory.updateMany({ where: { categoryId: id }, data: { isActive: false } }),
-    prisma.category.update({ where: { id }, data: { isActive: false } }),
+    prisma.subcategoryTranslation.deleteMany({ where: { subcategory: { categoryId: id } } }),
+    prisma.subcategory.deleteMany({ where: { categoryId: id } }),
+    prisma.categoryTranslation.deleteMany({ where: { categoryId: id } }),
+    prisma.category.delete({ where: { id } }),
   ]);
 
   return jsonOk({ categoryId: id });

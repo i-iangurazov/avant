@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { prisma, Locale } from '@plumbing/db';
+import { prisma, Locale, Prisma } from '@plumbing/db';
 import { requireAdmin } from '@/lib/auth/requireAdmin';
 import { jsonError, jsonErrorFromZod, jsonOk } from '@/lib/apiResponse';
 import { normalizeWhitespace } from '@/lib/importer/normalize';
@@ -223,7 +223,40 @@ export async function DELETE(
     return jsonError({ code: 'invalid_id', message: 'Invalid product id.' }, 400);
   }
 
-  await prisma.product.update({ where: { id }, data: { isActive: false } });
+  const existing = await prisma.product.findUnique({
+    where: { id },
+    include: { variants: { select: { id: true } } },
+  });
+  if (!existing) {
+    return jsonError({ code: 'not_found', message: 'Product not found.' }, 404);
+  }
+
+  const variantIds = existing.variants.map((variant) => variant.id);
+  if (variantIds.length > 0) {
+    const ordersWithVariant = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM "Order"
+      WHERE EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements("items") AS item
+        WHERE item->>'variantId' IN (${Prisma.join(variantIds)})
+      )
+      LIMIT 1
+    `;
+    if (ordersWithVariant.length > 0) {
+      return jsonError(
+        { code: 'product_has_orders', message: 'Нельзя удалить товар, который используется в заказах.' },
+        409
+      );
+    }
+  }
+
+  await prisma.$transaction([
+    prisma.variantTranslation.deleteMany({ where: { variant: { productId: id } } }),
+    prisma.variant.deleteMany({ where: { productId: id } }),
+    prisma.productTranslation.deleteMany({ where: { productId: id } }),
+    prisma.product.delete({ where: { id } }),
+  ]);
 
   return jsonOk({ productId: id });
 }

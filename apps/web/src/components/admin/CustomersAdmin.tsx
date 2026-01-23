@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { toastInfo } from '@/lib/toast';
+import { toastError, toastInfo } from '@/lib/toast';
 import { formatDateTime } from '@/lib/avantech/format';
 import { useLanguage } from '@/lib/useLanguage';
 import {
@@ -42,6 +42,8 @@ export default function CustomersAdmin() {
   const [listError, setListError] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState('');
   const [query, setQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -95,6 +97,23 @@ export default function CustomersAdmin() {
   useEffect(() => {
     loadCustomers();
   }, [loadCustomers]);
+
+  useEffect(() => {
+    if (selectedIds.size === 0) return;
+    const available = new Set(items.map((item) => item.id));
+    const next = new Set<string>();
+    let changed = false;
+    for (const id of selectedIds) {
+      if (available.has(id)) {
+        next.add(id);
+      } else {
+        changed = true;
+      }
+    }
+    if (changed) {
+      setSelectedIds(next);
+    }
+  }, [items, selectedIds]);
 
   const resetForm = () => {
     setForm({ id: '', name: '', phone: '', address: '', password: '', isActive: true });
@@ -171,9 +190,91 @@ export default function CustomersAdmin() {
   };
 
   const handleDelete = async (customer: CustomerListItem) => {
-    if (!confirm(`Отключить клиента «${customer.phone}»?`)) return;
-    await fetch(`/api/admin/customers/${customer.id}`, { method: 'DELETE' });
+    if (!confirm(`Удалить клиента «${customer.phone}»? Это действие нельзя отменить.`)) return;
+    try {
+      const response = await fetch(`/api/admin/customers/${customer.id}`, { method: 'DELETE' });
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+      if (!response.ok) {
+        toastError(payload?.message ?? 'Не удалось удалить клиента.');
+        return;
+      }
+      setSelectedIds((prev) => {
+        if (!prev.has(customer.id)) return prev;
+        const next = new Set(prev);
+        next.delete(customer.id);
+        return next;
+      });
+      await loadCustomers();
+    } catch {
+      toastError('Не удалось удалить клиента.');
+    }
+  };
+
+  const selectedCount = selectedIds.size;
+  const allSelected = items.length > 0 && items.every((item) => selectedIds.has(item.id));
+  const someSelected = items.some((item) => selectedIds.has(item.id));
+
+  const toggleAll = (checked: boolean | 'indeterminate') => {
+    const shouldSelect = checked === true;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const item of items) {
+        if (shouldSelect) {
+          next.add(item.id);
+        } else {
+          next.delete(item.id);
+        }
+      }
+      return next;
+    });
+  };
+
+  const toggleOne = (id: string, checked: boolean | 'indeterminate') => {
+    const shouldSelect = checked === true;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (shouldSelect) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    if (!confirm(`Удалить выбранных клиентов (${ids.length})? Это действие нельзя отменить.`)) return;
+    setBulkDeleting(true);
+    const failures: string[] = [];
+    const remaining = new Set(selectedIds);
+
+    for (const id of ids) {
+      try {
+        const response = await fetch(`/api/admin/customers/${id}`, { method: 'DELETE' });
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+        if (!response.ok) {
+          failures.push(payload?.message ?? 'Не удалось удалить клиента.');
+        } else {
+          remaining.delete(id);
+        }
+      } catch {
+        failures.push('Не удалось удалить клиента.');
+      }
+    }
+
+    setSelectedIds(remaining);
     await loadCustomers();
+    setBulkDeleting(false);
+
+    if (failures.length > 0) {
+      toastError(`Не удалось удалить ${failures.length} клиент(ов).`, { description: failures[0] });
+    }
   };
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -232,6 +333,36 @@ export default function CustomersAdmin() {
             </div>
           )}
 
+          {selectedCount > 0 && (
+            <div className="flex flex-col gap-2 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="font-medium text-foreground">Выбрано: {selectedCount}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                >
+                  <Trash2 className="size-4" />
+                  {bulkDeleting ? 'Удаление...' : 'Удалить'}
+                </Button>
+                <Button variant="outline" onClick={clearSelection} disabled={bulkDeleting}>
+                  Снять выделение
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!isLoading && items.length > 0 && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground md:hidden">
+              <Checkbox
+                checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                onCheckedChange={toggleAll}
+                aria-label="Выбрать всех клиентов на странице"
+              />
+              <span>Выбрать всех на странице</span>
+            </div>
+          )}
+
           {isLoading ? (
             <AdminListSkeleton rows={4} />
           ) : items.length === 0 ? (
@@ -252,6 +383,16 @@ export default function CustomersAdmin() {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
                       <tr>
+                        <th className="px-4 py-3 text-left">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                              onCheckedChange={toggleAll}
+                              aria-label="Выбрать всех клиентов на странице"
+                            />
+                            <span className="text-[10px] uppercase text-muted-foreground">Все на странице</span>
+                          </div>
+                        </th>
                         <th className="px-4 py-3 text-left">Клиент</th>
                         <th className="px-4 py-3 text-left">Телефон</th>
                         <th className="px-4 py-3 text-left">Адрес</th>
@@ -263,6 +404,13 @@ export default function CustomersAdmin() {
                     <tbody className="divide-y divide-border/60">
                       {items.map((item) => (
                         <tr key={item.id} className={item.isActive ? '' : 'opacity-60'}>
+                          <td className="px-4 py-3">
+                            <Checkbox
+                              checked={selectedIds.has(item.id)}
+                              onCheckedChange={(checked) => toggleOne(item.id, checked)}
+                              aria-label={`Выбрать клиента ${item.phone}`}
+                            />
+                          </td>
                           <td className="px-4 py-3">
                             <div className="font-medium text-foreground">
                               {item.name ?? 'Без имени'}
@@ -326,17 +474,24 @@ export default function CustomersAdmin() {
                       className={`rounded-xl border border-border/60 bg-white p-4 shadow-sm ${item.isActive ? '' : 'opacity-60'}`}
                     >
                       <div className="flex flex-col gap-3">
-                        <div className="space-y-1">
-                          <div className="text-sm font-semibold text-foreground">
-                            {item.name ?? 'Без имени'}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="text-sm font-semibold text-foreground">
+                              {item.name ?? 'Без имени'}
+                            </div>
+                            <div className="text-xs text-muted-foreground">{item.phone}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {item.address ? item.address : 'Адрес: —'}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatDateTime(new Date(item.createdAt), lang)}
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground">{item.phone}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {item.address ? item.address : 'Адрес: —'}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatDateTime(new Date(item.createdAt), lang)}
-                          </div>
+                          <Checkbox
+                            checked={selectedIds.has(item.id)}
+                            onCheckedChange={(checked) => toggleOne(item.id, checked)}
+                            aria-label={`Выбрать клиента ${item.phone}`}
+                          />
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge variant={item.isActive ? 'secondary' : 'outline'}>

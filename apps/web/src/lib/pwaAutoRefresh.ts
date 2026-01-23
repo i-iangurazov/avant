@@ -1,4 +1,4 @@
-export const DEFAULT_PWA_REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
+export const DEFAULT_PWA_REFRESH_COOLDOWN_MS = 60 * 1000;
 
 type StandaloneInput = {
   displayMode?: boolean;

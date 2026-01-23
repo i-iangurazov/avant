@@ -149,7 +149,23 @@ export async function DELETE(
     return jsonError({ code: 'invalid_id', message: 'Invalid subcategory id.' }, 400);
   }
 
-  await prisma.subcategory.update({ where: { id }, data: { isActive: false } });
+  const existing = await prisma.subcategory.findUnique({ where: { id } });
+  if (!existing) {
+    return jsonError({ code: 'not_found', message: 'Subcategory not found.' }, 404);
+  }
+
+  const productCount = await prisma.product.count({ where: { subcategoryId: id } });
+  if (productCount > 0) {
+    return jsonError(
+      { code: 'subcategory_has_products', message: 'Нельзя удалить подкатегорию с товарами.' },
+      409
+    );
+  }
+
+  await prisma.$transaction([
+    prisma.subcategoryTranslation.deleteMany({ where: { subcategoryId: id } }),
+    prisma.subcategory.delete({ where: { id } }),
+  ]);
 
   return jsonOk({});
 }
