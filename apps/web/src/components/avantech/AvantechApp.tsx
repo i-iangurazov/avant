@@ -461,7 +461,7 @@ function AvantechContent() {
                         onOpenChange={(open) => setSectionState(`subcategory:${group.id}`, open)}
                       >
                         {group.products.length === 0 ? (
-                          <div className="rounded-xl border border-dashed border-border bg-muted/40 px-3 py-4 text-center text-xs text-muted-foreground">
+                          <div className="rounded-xl border border-dashed border-border bg-white/40 px-3 py-4 text-center text-xs text-muted-foreground">
                             {tCommon('states.empty')}
                           </div>
                         ) : (
