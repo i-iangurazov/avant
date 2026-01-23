@@ -7,7 +7,10 @@ type RequireAdminResult =
   | { ok: true; user: User }
   | { ok: false; response: NextResponse };
 
-export const requireAdmin = async (request?: Request): Promise<RequireAdminResult> => {
+export const requireRole = async (
+  request: Request | undefined,
+  allowedRoles: UserRole[]
+): Promise<RequireAdminResult> => {
   const user = await getSessionUser(request);
   if (!user) {
     return {
@@ -15,7 +18,7 @@ export const requireAdmin = async (request?: Request): Promise<RequireAdminResul
       response: jsonError({ code: 'unauthorized', message: 'Not authorized.' }, 401),
     };
   }
-  if (user.role !== UserRole.ADMIN) {
+  if (!allowedRoles.includes(user.role)) {
     return {
       ok: false,
       response: jsonError({ code: 'forbidden', message: 'Access denied.' }, 403),
@@ -23,3 +26,8 @@ export const requireAdmin = async (request?: Request): Promise<RequireAdminResul
   }
   return { ok: true, user };
 };
+
+export const requireAdmin = (request?: Request) => requireRole(request, [UserRole.ADMIN]);
+
+export const requireCustomersManager = (request?: Request) =>
+  requireRole(request, [UserRole.ADMIN, UserRole.CLIENTS_MANAGER]);

@@ -1,8 +1,10 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getTimeZone } from 'next-intl/server';
 import { UserRole } from '@plumbing/db';
 import { getSessionUser } from '@/lib/auth/session';
 import IntlProvider from '@/components/IntlProvider';
+import AdminForbidden from '@/components/admin/AdminForbidden';
 import ruMessages from '@/messages/ru.json';
 
 export default async function AdminLayout({
@@ -14,29 +16,37 @@ export default async function AdminLayout({
   if (!user) {
     redirect('/login');
   }
-  if (user.role !== UserRole.ADMIN) {
-    return (
-      <div className="min-h-screen bg-white text-foreground">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 px-4 py-10">
-          <h1 className="text-2xl font-semibold">Доступ запрещён</h1>
-          <p className="text-sm text-muted-foreground">
-            У вас нет прав для доступа к этому разделу.
-          </p>
-        </div>
-      </div>
-    );
+  if (user.role !== UserRole.ADMIN && user.role !== UserRole.CLIENTS_MANAGER) {
+    return <AdminForbidden />;
   }
 
   const timeZone = await getTimeZone();
 
+  const navItems = [
+    { href: '/admin/customers', label: 'Клиенты', roles: [UserRole.ADMIN, UserRole.CLIENTS_MANAGER] },
+    { href: '/admin/orders', label: 'Заказы', roles: [UserRole.ADMIN] },
+    { href: '/admin/products', label: 'Товары', roles: [UserRole.ADMIN] },
+    { href: '/admin/taxonomy', label: 'Категории', roles: [UserRole.ADMIN] },
+  ].filter((item) => item.roles.includes(user.role));
+
   return (
-    <IntlProvider
-      locale="ru"
-      messages={ruMessages}
-      timeZone={timeZone}
-      setDocumentLang={false}
-    >
-      {children}
+    <IntlProvider locale="ru" messages={ruMessages} timeZone={timeZone} setDocumentLang={false}>
+      <div className="bg-white text-foreground">
+        <div className="border-b border-border/60">
+          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2 px-4 py-3 sm:px-6">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-full border border-border/70 px-3 py-1.5 text-xs font-semibold text-foreground transition hover:border-brandTint/70 hover:bg-brandTint/20"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+        {children}
+      </div>
     </IntlProvider>
   );
 }

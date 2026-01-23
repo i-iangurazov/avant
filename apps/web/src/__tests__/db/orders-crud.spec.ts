@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { prisma } from '@plumbing/db';
 import { POST as createOrder } from '@/app/api/admin/orders/route';
 import { GET as getOrder } from '@/app/api/admin/orders/[id]/route';
-import { createAdminSession, createCategory, createProduct, createVariant, createUser } from './helpers';
+import {
+  createAdminSession,
+  createCategory,
+  createClientsManagerSession,
+  createProduct,
+  createUser,
+  createVariant,
+} from './helpers';
 
 const jsonRequest = (url: string, token: string, body: unknown) =>
   new Request(url, {
@@ -50,5 +57,17 @@ describe('orders admin routes', () => {
     const detailPayload = (await detailResponse.json()) as { order?: { id: string; items: unknown[] } };
     expect(detailPayload.order?.id).toBe(payload.order.id);
     expect(Array.isArray(detailPayload.order?.items)).toBe(true);
+  });
+
+  it('rejects clients manager access', async () => {
+    const { token } = await createClientsManagerSession();
+    const response = await createOrder(
+      jsonRequest('http://localhost/api/admin/orders', token, {
+        userId: 'missing',
+        items: [{ quantity: 1, unitPrice: 100 }],
+      })
+    );
+
+    expect(response.status).toBe(403);
   });
 });

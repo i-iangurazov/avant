@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { CatalogProduct, CatalogVariant } from '@/lib/avantech/catalogApi';
+import { formatDisplayTitle } from '@/lib/formatTitle';
 import { useLanguage } from '@/lib/useLanguage';
 import { cn } from '@/lib/utils';
 import VariantChips from './VariantChips';
@@ -21,13 +22,6 @@ type Props = {
 };
 
 const attributePriority = ['diameter', 'thread', 'length', 'pressure', 'angle', 'width', 'volume', 'material'];
-const formatTitleCase = (value: string, locale: string) => {
-  const trimmed = value.trim();
-  if (!trimmed) return value;
-  const casingLocale = locale === 'kg' ? 'ky' : locale;
-  const lower = trimmed.toLocaleLowerCase(casingLocale);
-  return lower.charAt(0).toLocaleUpperCase(casingLocale) + lower.slice(1);
-};
 
 export default function ProductCard({
   product,
@@ -46,7 +40,7 @@ export default function ProductCard({
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const prevQuantityRef = useRef(0);
   const prevVariantRef = useRef<string | null>(null);
-  const productName = useMemo(() => formatTitleCase(product.name, lang), [product.name, lang]);
+  const productName = useMemo(() => formatDisplayTitle(product.name, lang), [product.name, lang]);
 
   const activeVariants = useMemo(() => variants.filter((variant) => variant.isActive), [variants]);
 

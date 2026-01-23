@@ -67,7 +67,6 @@
       "subtitle": "Review items before ordering.",
       "empty": "Cart is empty.",
       "total": "Total",
-      "itemTotal": "Item total",
       "order": "Place order",
       "sending": "Sending...",
       "orderSuccess": "Order sent to Telegram.",

@@ -106,5 +106,5 @@ export const filterCatalog = (
       ...category,
       products: category.products.filter((product) => product.subcategoryId === selectedSubcategoryId),
     }))
-    .filter((category) => category.products.length > 0);
+    .filter((category) => category.subcategories.some((subcategory) => subcategory.id === selectedSubcategoryId));
 };

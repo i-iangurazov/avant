@@ -15,6 +15,7 @@ enum Locale {
 
 enum UserRole {
   ADMIN
+  CLIENTS_MANAGER
   USER
 }
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { prisma, Prisma, UserRole } from '@plumbing/db';
-import { requireAdmin } from '@/lib/auth/requireAdmin';
+import { requireCustomersManager } from '@/lib/auth/requireAdmin';
 import { jsonError, jsonErrorFromZod, jsonOk } from '@/lib/apiResponse';
 import { isValidPhone } from '@/lib/auth/validation';
 import { normalizeWhitespace } from '@/lib/importer/normalize';
@@ -27,7 +27,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id?: string | string[] }> }
 ) {
-  const auth = await requireAdmin(request);
+  const auth = await requireCustomersManager(request);
   if (!auth.ok) return auth.response;
 
   const id = await resolveId(params);
@@ -56,7 +56,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id?: string | string[] }> }
 ) {
-  const auth = await requireAdmin(request);
+  const auth = await requireCustomersManager(request);
   if (!auth.ok) return auth.response;
 
   const id = await resolveId(params);
@@ -144,7 +144,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id?: string | string[] }> }
 ) {
-  const auth = await requireAdmin(request);
+  const auth = await requireCustomersManager(request);
   if (!auth.ok) return auth.response;
 
   const id = await resolveId(params);

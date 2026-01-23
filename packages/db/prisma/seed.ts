@@ -13,6 +13,7 @@ const pickText = (value: LocalizedText, locale: Locale) => value[locale] ?? valu
 
 const ADMIN_PHONE_FALLBACK = '+996700000000';
 const ADMIN_PASSWORD_FALLBACK = 'Admin123!';
+const CLIENTS_MANAGER_PASSWORD_FALLBACK = 'Clients123!';
 
 const normalizePhone = (phone: string) => phone.trim();
 const phoneRegex = /^\+996\d{9}$/;
@@ -151,16 +152,58 @@ const seedAdmin = async () => {
   return { phone, password };
 };
 
+const seedClientsManager = async () => {
+  const rawPhone = process.env.SEED_CLIENTS_MANAGER_PHONE;
+  if (!rawPhone) return null;
+  const phone = normalizePhone(rawPhone);
+  if (!phoneRegex.test(phone)) {
+    throw new Error(`SEED_CLIENTS_MANAGER_PHONE must match +996XXXXXXXXX format. Received: ${phone}`);
+  }
+  const password = process.env.SEED_CLIENTS_MANAGER_PASSWORD ?? CLIENTS_MANAGER_PASSWORD_FALLBACK;
+  if (password.length < 8) {
+    throw new Error('SEED_CLIENTS_MANAGER_PASSWORD must be at least 8 characters.');
+  }
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  await prisma.user.upsert({
+    where: { phone },
+    update: {
+      name: 'Clients manager',
+      passwordHash,
+      role: UserRole.CLIENTS_MANAGER,
+      isActive: true,
+    },
+    create: {
+      phone,
+      name: 'Clients manager',
+      passwordHash,
+      role: UserRole.CLIENTS_MANAGER,
+      isActive: true,
+    },
+  });
+
+  return { phone, password };
+};
+
 const main = async () => {
   await seedCatalog();
+  const clientsManager = await seedClientsManager();
   const admin = await seedAdmin();
-  return admin;
+  return { admin, clientsManager };
 };
 
 main()
-  .then((admin) => {
+  .then(({ admin, clientsManager }) => {
     // eslint-disable-next-line no-console
     console.log(`Seed complete. Admin phone: ${admin.phone}`);
+    if (clientsManager) {
+      // eslint-disable-next-line no-console
+      console.log(`Clients manager phone: ${clientsManager.phone}`);
+      if (!process.env.SEED_CLIENTS_MANAGER_PASSWORD) {
+        // eslint-disable-next-line no-console
+        console.log(`Default clients manager password: ${CLIENTS_MANAGER_PASSWORD_FALLBACK}`);
+      }
+    }
     if (!process.env.SEED_ADMIN_PASSWORD) {
       // eslint-disable-next-line no-console
       console.log(`Default admin password: ${ADMIN_PASSWORD_FALLBACK}`);

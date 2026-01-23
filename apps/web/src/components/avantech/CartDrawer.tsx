@@ -67,7 +67,7 @@ export default function CartDrawer({
                       <div className="text-xs text-muted-foreground">{line.variantLabel}</div>
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="text-sm font-semibold text-foreground">
+                      <div className="flex-1 text-base font-semibold text-foreground">
                         {line.quantity} x {formatPrice(line.unitPrice)} = {formatPrice(lineTotal)}
                       </div>
                       <div className="flex items-center gap-2">
@@ -83,7 +83,7 @@ export default function CartDrawer({
                         <Button
                           type="button"
                           variant="ghost"
-                          size="icon-sm"
+                          size="icon"
                           onClick={() => onRemove(line.variantId)}
                           aria-label={t('actions.removeItem')}
                           className="text-destructive hover:bg-destructive/10 hover:text-destructive"

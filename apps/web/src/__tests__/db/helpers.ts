@@ -74,6 +74,16 @@ export const createAdminSession = async (params?: { phone?: string; password?: s
   return { user, token };
 };
 
+export const createClientsManagerSession = async (params?: { phone?: string; password?: string }) => {
+  const user = await createUser({
+    phone: params?.phone ?? '+996700000199',
+    password: params?.password ?? 'Password123',
+    role: UserRole.CLIENTS_MANAGER,
+  });
+  const { token } = await createSession(user.id);
+  return { user, token };
+};
+
 export const createCategory = async (params: { name: string; sortOrder?: number }) => {
   return prisma.category.create({
     data: {

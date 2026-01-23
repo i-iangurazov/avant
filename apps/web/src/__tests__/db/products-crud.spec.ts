@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { prisma } from '@plumbing/db';
 import { POST as createProduct } from '@/app/api/admin/products/route';
 import { PATCH as updateProduct } from '@/app/api/admin/products/[id]/route';
-import { createAdminSession, createCategory } from './helpers';
+import { createAdminSession, createCategory, createClientsManagerSession } from './helpers';
 
 const jsonRequest = (url: string, token: string, body: unknown, method = 'POST') =>
   new Request(url, {
@@ -91,5 +91,18 @@ describe('products admin routes', () => {
     const labels = updated?.variants.map((variant) => variant.translations[0]?.label ?? '').sort() ?? [];
     expect(updated?.variants.length).toBe(2);
     expect(labels).toEqual(['32 мм', '40 мм']);
+  });
+
+  it('rejects clients manager access', async () => {
+    const { token } = await createClientsManagerSession();
+    const response = await createProduct(
+      jsonRequest('http://localhost/api/admin/products', token, {
+        name: 'Запрещённый товар',
+        categoryId: 'missing',
+        variants: [{ label: '20 мм', price: 120 }],
+      })
+    );
+
+    expect(response.status).toBe(403);
   });
 });

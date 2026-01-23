@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { prisma, Prisma, UserRole } from '@plumbing/db';
-import { requireAdmin } from '@/lib/auth/requireAdmin';
+import { requireCustomersManager } from '@/lib/auth/requireAdmin';
 import { jsonError, jsonErrorFromZod, jsonOk } from '@/lib/apiResponse';
 import { isValidPhone } from '@/lib/auth/validation';
 import { normalizeWhitespace } from '@/lib/importer/normalize';
@@ -26,7 +26,7 @@ const parsePageNumber = (value: string | null, fallback: number) => {
 const generatePassword = () => randomBytes(9).toString('base64url');
 
 export async function GET(request: Request) {
-  const auth = await requireAdmin(request);
+  const auth = await requireCustomersManager(request);
   if (!auth.ok) return auth.response;
 
   const url = new URL(request.url);
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireAdmin(request);
+  const auth = await requireCustomersManager(request);
   if (!auth.ok) return auth.response;
 
   const body = await request.json().catch(() => null);

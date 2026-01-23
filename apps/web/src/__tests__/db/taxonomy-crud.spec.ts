@@ -3,7 +3,7 @@ import { prisma } from '@plumbing/db';
 import { POST as createCategory } from '@/app/api/admin/taxonomy/categories/route';
 import { POST as createSubcategory } from '@/app/api/admin/taxonomy/subcategories/route';
 import { GET as getTaxonomy } from '@/app/api/admin/taxonomy/route';
-import { createAdminSession } from './helpers';
+import { createAdminSession, createClientsManagerSession } from './helpers';
 
 const jsonRequest = (url: string, token: string, body: unknown) =>
   new Request(url, {
@@ -63,5 +63,15 @@ describe('taxonomy admin routes', () => {
     const listedCategory = listPayload.categories?.find((item) => item.id === categoryPayload.category.id);
     expect(listedCategory).toBeTruthy();
     expect(listedCategory?.subcategories?.some((item) => item.id === subcategoryPayload.subcategory.id)).toBe(true);
+  });
+
+  it('rejects clients manager access', async () => {
+    const { token } = await createClientsManagerSession();
+
+    const response = await createCategory(
+      jsonRequest('http://localhost/api/admin/taxonomy/categories', token, { name: 'Запрещено' })
+    );
+
+    expect(response.status).toBe(403);
   });
 });

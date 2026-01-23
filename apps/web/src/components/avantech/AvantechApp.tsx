@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toastError, toastSuccess } from '@/lib/toast';
@@ -15,6 +15,7 @@ import {
   type SearchEntry,
 } from '@/lib/avantech/catalogApi';
 import { formatPrice } from '@/lib/avantech/format';
+import { formatDisplayTitle } from '@/lib/formatTitle';
 import Header from './Header';
 import CategorySection from './CategorySection';
 import ProductCard from './ProductCard';
@@ -22,6 +23,7 @@ import FloatingCartBar from './FloatingCartBar';
 import { Button } from '@/components/ui/button';
 import { Sheet } from '@/components/ui/sheet';
 import CartDrawer from './CartDrawer';
+import PwaAutoReload from '@/components/PwaAutoReload';
 
 const HIGHLIGHT_MS = 1200;
 
@@ -61,16 +63,18 @@ function AvantechContent() {
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState('all');
   const highlightTimerRef = useRef<number | null>(null);
   const didSyncSelection = useRef(false);
+  const sectionStateRef = useRef<Record<string, boolean>>({});
 
   const currencyLabel = tCommon('labels.currency');
   const formatPriceLocalized = (amount: number) => formatPrice(amount, lang, currencyLabel);
-  const casingLocale = lang === 'kg' ? 'ky' : lang;
-  const formatTitleCase = (value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return value;
-    const lower = trimmed.toLocaleLowerCase(casingLocale);
-    return lower.charAt(0).toLocaleUpperCase(casingLocale) + lower.slice(1);
-  };
+  const formatTitleCase = useCallback((value: string) => formatDisplayTitle(value, lang), [lang]);
+  const getSectionState = useCallback((key: string, fallback = true) => {
+    const stored = sectionStateRef.current[key];
+    return typeof stored === 'boolean' ? stored : fallback;
+  }, []);
+  const setSectionState = useCallback((key: string, open: boolean) => {
+    sectionStateRef.current[key] = open;
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -225,8 +229,12 @@ function AvantechContent() {
   );
 
   const subcategoryOptions = useMemo(
-    () => selectedCategory?.subcategories.map((subcategory) => ({ id: subcategory.id, name: subcategory.name })) ?? [],
-    [selectedCategory]
+    () =>
+      selectedCategory?.subcategories.map((subcategory) => ({
+        id: subcategory.id,
+        name: formatTitleCase(subcategory.name),
+      })) ?? [],
+    [formatTitleCase, selectedCategory]
   );
 
   const searchEntries = useMemo(() => {
@@ -240,12 +248,12 @@ function AvantechContent() {
         .filter((item) => item.quantity > 0)
         .map((item) => ({
           variantId: item.variantId,
-          productName: item.productName,
+          productName: formatTitleCase(item.productName),
           variantLabel: item.variantLabel,
           unitPrice: item.price,
           quantity: item.quantity,
         })),
-    [items]
+    [formatTitleCase, items]
   );
 
   const totalPriceNumber = useMemo(
@@ -366,6 +374,7 @@ function AvantechContent() {
 
   return (
     <div className="relative min-h-screen bg-white text-foreground">
+      <PwaAutoReload isBusy={isCartOpen || isOrdering} />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,40,0,0.12),transparent_55%),radial-gradient(circle_at_right,_rgba(67,37,135,0.08),transparent_50%)]" />
       <div className="pointer-events-none absolute inset-0 opacity-50 [background-image:radial-gradient(#0000000f_1px,transparent_1px)] [background-size:18px_18px]" />
       <div className="relative">
@@ -409,6 +418,8 @@ function AvantechContent() {
                 title={category.name}
                 count={category.products.length}
                 contentClassName="mt-0"
+                defaultOpen={getSectionState(`category:${category.id}`, true)}
+                onOpenChange={(open) => setSectionState(`category:${category.id}`, open)}
               >
                 <div className="flex flex-col gap-6">
                   {(() => {
@@ -422,9 +433,7 @@ function AvantechContent() {
                         name: formatTitleCase(subcategory.name),
                         products: category.products.filter((product) => product.subcategoryId === subcategory.id),
                       }))
-                      .filter(
-                        (group) => selectedSubcategoryId === 'all' || group.id === selectedSubcategoryId
-                      );
+                      .filter((group) => selectedSubcategoryId === 'all' || group.id === selectedSubcategoryId);
 
                     const uncategorizedProducts = category.products.filter(
                       (product) => !product.subcategoryId || !subcategoryMap.has(product.subcategoryId)
@@ -448,10 +457,11 @@ function AvantechContent() {
                         titleClassName="text-sm md:text-base"
                         countClassName="px-2 py-0.5 text-[11px]"
                         contentClassName="mt-0"
-                        defaultOpen={true}
+                        defaultOpen={getSectionState(`subcategory:${group.id}`, true)}
+                        onOpenChange={(open) => setSectionState(`subcategory:${group.id}`, open)}
                       >
                         {group.products.length === 0 ? (
-                          <div className="rounded-2xl border border-dashed border-border bg-white px-4 py-6 text-center text-xs text-muted-foreground">
+                          <div className="rounded-xl border border-dashed border-border bg-muted/40 px-3 py-4 text-center text-xs text-muted-foreground">
                             {tCommon('states.empty')}
                           </div>
                         ) : (

@@ -15,6 +15,7 @@ type Props = {
   countClassName?: string;
   contentClassName?: string;
   defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 export default function CategorySection({
@@ -28,14 +29,22 @@ export default function CategorySection({
   countClassName,
   contentClassName,
   defaultOpen = true,
+  onOpenChange,
 }: Props) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const handleToggle = () => {
+    setIsOpen((prev) => {
+      const next = !prev;
+      onOpenChange?.(next);
+      return next;
+    });
+  };
 
   return (
     <section id={id} className={cn('scroll-mt-28', className)}>
       <button
         type="button"
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={handleToggle}
         aria-expanded={isOpen}
         className={cn(
           'mb-4 flex w-full items-center justify-between gap-3 text-left',
