@@ -12,11 +12,13 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const isAdminRole = (role: UserRole) =>
+    role === UserRole.ADMIN || role === UserRole.CLIENTS_MANAGER;
   const user = await getSessionUser();
   if (!user) {
     redirect('/login');
   }
-  if (user.role !== UserRole.ADMIN && user.role !== UserRole.CLIENTS_MANAGER) {
+  if (!isAdminRole(user.role)) {
     return <AdminForbidden />;
   }
 
@@ -27,14 +29,15 @@ export default async function AdminLayout({
     { href: '/admin/orders', label: 'Заказы', roles: [UserRole.ADMIN] },
     { href: '/admin/products', label: 'Товары', roles: [UserRole.ADMIN] },
     { href: '/admin/taxonomy', label: 'Категории', roles: [UserRole.ADMIN] },
-  ].filter((item) => item.roles.includes(user.role));
+  ];
+  const visibleItems = navItems.filter((item) => item.roles.includes(user.role));
 
   return (
     <IntlProvider locale="ru" messages={ruMessages} timeZone={timeZone} setDocumentLang={false}>
       <div className="bg-white text-foreground">
         <div className="border-b border-border/60">
           <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2 px-4 py-3 sm:px-6">
-            {navItems.map((item) => (
+            {visibleItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
