@@ -22,7 +22,7 @@ export default async function AdminLayout({
 
   const timeZone = await getTimeZone();
 
-  const navItems = [
+  const navItems: Array<{ href: string; label: string; roles: UserRole[] }> = [
     { href: '/admin/customers', label: 'Клиенты', roles: [UserRole.ADMIN, UserRole.CLIENTS_MANAGER] },
     { href: '/admin/orders', label: 'Заказы', roles: [UserRole.ADMIN] },
     { href: '/admin/products', label: 'Товары', roles: [UserRole.ADMIN] },
