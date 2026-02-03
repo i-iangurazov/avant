@@ -214,11 +214,6 @@ function AvantechContent() {
     [categories, selectedCategoryId, selectedSubcategoryId]
   );
 
-  const visibleVariants = useMemo(
-    () => visibleCategories.flatMap((category) => category.products.flatMap((product) => product.variants)),
-    [visibleCategories]
-  );
-
   const categoryOptions = useMemo(
     () => categories.map((category) => ({ id: category.id, name: category.name })),
     [categories]
@@ -240,8 +235,8 @@ function AvantechContent() {
 
   const searchEntries = useMemo(() => {
     if (isLoadingCatalog || catalogError) return [];
-    return buildSearchEntries(visibleVariants, productsById);
-  }, [catalogError, isLoadingCatalog, productsById, visibleVariants]);
+    return buildSearchEntries(Object.values(variantsById), productsById);
+  }, [catalogError, isLoadingCatalog, productsById, variantsById]);
 
   const cartLines = useMemo<CartLine[]>(
     () =>
@@ -268,6 +263,18 @@ function AvantechContent() {
   );
 
   const handleSearchSelect = (entry: SearchEntry) => {
+    const product = productsById[entry.productId];
+    setSelectedCategoryId('all');
+    setSelectedSubcategoryId('all');
+    if (product) {
+      setSectionState(`category:${product.categoryId}`, true);
+      if (product.subcategoryId) {
+        setSectionState(`subcategory:${product.subcategoryId}`, true);
+      } else {
+        setSectionState(`subcategory:${product.categoryId}-uncategorized`, true);
+      }
+    }
+
     setAutoSelectVariantId(entry.variantId);
     setHighlightedProductId(entry.productId);
 
@@ -279,10 +286,18 @@ function AvantechContent() {
       setHighlightedProductId((current) => (current === entry.productId ? null : current));
     }, HIGHLIGHT_MS);
 
-    const target = document.getElementById(`product-${entry.productId}`);
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    let attempts = 0;
+    const tryScroll = () => {
+      const target = document.getElementById(`product-${entry.productId}`);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      if (attempts >= 6) return;
+      attempts += 1;
+      window.requestAnimationFrame(tryScroll);
+    };
+    tryScroll();
   };
 
   useEffect(() => {

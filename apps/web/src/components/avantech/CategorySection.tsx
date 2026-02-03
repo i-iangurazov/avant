@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +32,10 @@ export default function CategorySection({
   onOpenChange,
 }: Props) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    setIsOpen(defaultOpen);
+  }, [defaultOpen]);
   const handleToggle = () => {
     setIsOpen((prev) => {
       const next = !prev;
