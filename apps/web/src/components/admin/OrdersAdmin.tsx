@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { formatDateTime, formatPrice } from '@/lib/avantech/format';
+import { matchesSearchTextPrefix } from '@/lib/avantech/search';
 import {
   buildSearchEntries,
   indexCatalog,
@@ -285,9 +286,11 @@ export default function OrdersAdmin() {
   };
 
   const searchResults = useMemo(() => {
-    if (!productQuery.trim()) return [];
-    const needle = productQuery.trim().toLowerCase();
-    return catalogEntries.filter((entry) => entry.searchText.includes(needle)).slice(0, 8);
+    const trimmedQuery = productQuery.trim();
+    if (!trimmedQuery) return [];
+    return catalogEntries
+      .filter((entry) => matchesSearchTextPrefix(entry.searchText, trimmedQuery))
+      .slice(0, 8);
   }, [catalogEntries, productQuery]);
 
   const createTotal = useMemo(() => {

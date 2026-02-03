@@ -1,5 +1,6 @@
 import type { Category, Product, SearchEntry, Variant, Language } from './types';
 import { getLocalizedTextRequired } from './localize';
+import { buildSearchText } from './search';
 
 export const categories: Category[] = [
   {
@@ -396,7 +397,7 @@ export const buildSearchEntries = (lang: Language): SearchEntry[] =>
       const title = getLocalizedTextRequired(product.name, lang);
       const subtitle = getLocalizedTextRequired(variant.label, lang);
       const sku = variant.sku;
-      const searchText = [title, subtitle, sku].filter(Boolean).join(' ').toLowerCase();
+      const searchText = buildSearchText([title, subtitle, sku], variant.attributes);
       return {
         id: variant.id,
         productId: variant.productId,

@@ -1,3 +1,5 @@
+import { buildSearchText } from './search';
+
 export type CatalogVariant = {
   id: string;
   productId: string;
@@ -77,7 +79,7 @@ export const buildSearchEntries = (
     const title = product?.name ?? variant.productId;
     const subtitle = variant.label;
     const sku = variant.sku ?? undefined;
-    const searchText = [title, subtitle, sku].filter(Boolean).join(' ').toLowerCase();
+    const searchText = buildSearchText([title, subtitle, sku], variant.attributes);
     return {
       id: variant.id,
       productId: variant.productId,
