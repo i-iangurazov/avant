@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build --webpack",
-    "start": "next start",
+    "dev": "set -a; [ -f ../../.env ] && . ../../.env; [ -f ../../.env.local ] && . ../../.env.local; [ -f ./.env ] && . ./.env; [ -f ./.env.local ] && . ./.env.local; set +a; next dev",
+    "build": "set -a; [ -f ../../.env ] && . ../../.env; [ -f ../../.env.local ] && . ../../.env.local; [ -f ./.env ] && . ./.env; [ -f ./.env.local ] && . ./.env.local; set +a; next build --webpack",
+    "start": "set -a; [ -f ../../.env ] && . ../../.env; [ -f ../../.env.local ] && . ../../.env.local; [ -f ./.env ] && . ./.env; [ -f ./.env.local ] && . ./.env.local; set +a; next start",
     "lint": "eslint",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",

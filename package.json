@@ -14,7 +14,7 @@
     "test": "pnpm --filter @plumbing/web test",
     "test:db": "DATABASE_URL=$DATABASE_URL_TEST NODE_ENV=test pnpm --filter @plumbing/db exec prisma migrate deploy && DATABASE_URL=$DATABASE_URL_TEST NODE_ENV=test pnpm --filter @plumbing/web test:db",
     "test:e2e": "pnpm --filter @plumbing/web test:ui",
-    "postinstall": "if [ -z \"$DATABASE_URL\" ]; then echo \"Skipping prisma generate (no DATABASE_URL)\"; else pnpm --filter @plumbing/db run prisma:generate; fi",
+    "postinstall": "set -a; [ -f .env ] && . ./.env; [ -f .env.local ] && . ./.env.local; set +a; if [ -z \"$DATABASE_URL\" ]; then echo \"Skipping prisma generate (no DATABASE_URL in env files)\"; else pnpm --filter @plumbing/db run prisma:generate; fi",
     "db:up": "docker compose -f infra/docker/compose.yml up -d",
     "db:down": "docker compose -f infra/docker/compose.yml down",
     "db:reset": "docker compose -f infra/docker/compose.yml down -v && docker compose -f infra/docker/compose.yml up -d"

@@ -40,6 +40,8 @@ export default function ProductCard({
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const prevQuantityRef = useRef(0);
   const prevVariantRef = useRef<string | null>(null);
+  const quantityStepperRef = useRef<HTMLDivElement | null>(null);
+  const shouldScrollToStepperRef = useRef(false);
   const productName = useMemo(() => formatDisplayTitle(product.name, lang), [product.name, lang]);
 
   const activeVariants = useMemo(() => variants.filter((variant) => variant.isActive), [variants]);
@@ -72,6 +74,28 @@ export default function ProductCard({
     prevQuantityRef.current = quantity;
   }, [quantity, selectedVariantId]);
 
+  useEffect(() => {
+    if (!shouldScrollToStepperRef.current || !selectedVariantId) return;
+    const stepperElement = quantityStepperRef.current;
+    if (!stepperElement) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const floatingCartBar = document.querySelector<HTMLElement>('[data-floating-cart-bar]');
+    const floatingBarTop = floatingCartBar?.getBoundingClientRect().top ?? window.innerHeight;
+    const bottomCoveredPx = Math.max(0, window.innerHeight - floatingBarTop);
+    const extraGapPx = 20;
+    const stepperBottomDoc = window.scrollY + stepperElement.getBoundingClientRect().bottom;
+    const targetViewportBottom = window.innerHeight - bottomCoveredPx - extraGapPx;
+    const targetScrollY = Math.max(0, stepperBottomDoc - targetViewportBottom);
+
+    if (targetScrollY > window.scrollY) {
+      window.scrollTo({
+        top: targetScrollY,
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      });
+    }
+    shouldScrollToStepperRef.current = false;
+  }, [selectedVariantId]);
+
   const attributePairs = useMemo(() => {
     if (!selectedVariant) return [] as Array<{ key: string; value: string | number }>;
     return attributePriority
@@ -83,11 +107,13 @@ export default function ProductCard({
   const handleSelectVariant = (variantId: string) => {
     if (variantId === selectedVariantId) {
       setSelectedVariantId(null);
+      shouldScrollToStepperRef.current = false;
       if (getQuantity(variantId) > 0) {
         setQuantity(variantId, 0);
       }
       return;
     }
+    shouldScrollToStepperRef.current = true;
     setSelectedVariantId(variantId);
   };
 
@@ -150,14 +176,16 @@ export default function ProductCard({
               ))}
             </div>
           )}
-          <QuantityStepper
-            value={quantity}
-            onIncrement={() => onIncrement(selectedVariant.id)}
-            onDecrement={handleDecrement}
-            onChange={(next) => setQuantity(selectedVariant.id, next)}
-            increaseLabel={t('actions.increaseQty')}
-            decreaseLabel={t('actions.decreaseQty')}
-          />
+          <div ref={quantityStepperRef}>
+            <QuantityStepper
+              value={quantity}
+              onIncrement={() => onIncrement(selectedVariant.id)}
+              onDecrement={handleDecrement}
+              onChange={(next) => setQuantity(selectedVariant.id, next)}
+              increaseLabel={t('actions.increaseQty')}
+              decreaseLabel={t('actions.decreaseQty')}
+            />
+          </div>
         </div>
       )}
     </article>

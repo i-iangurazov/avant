@@ -18,7 +18,10 @@ export default function FloatingCartBar({
   onOpenCart,
 }: Props) {
   return (
-    <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-40 w-[min(640px,calc(100%-2rem))] -translate-x-1/2">
+    <div
+      data-floating-cart-bar
+      className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-40 w-[min(640px,calc(100%-2rem))] -translate-x-1/2"
+    >
       <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-white px-4 py-3 shadow-lg">
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
