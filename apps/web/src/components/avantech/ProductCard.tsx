@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { CatalogProduct, CatalogVariant } from '@/lib/avantech/catalogApi';
@@ -135,14 +136,14 @@ export default function ProductCard({
       )}
     >
       <div className="flex gap-4">
-        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-border bg-primary/5">
+        <div className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-border bg-primary/5">
           {product.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={product.imageUrl}
-              alt={product.name}
-              className="h-full w-full object-cover"
-              loading="lazy"
+              alt={productName}
+              fill
+              sizes="96px"
+              className="object-cover"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-primary/10 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

@@ -1,10 +1,18 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import { getLocale, getMessages, getTranslations, getTimeZone } from 'next-intl/server';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 import IntlProvider from '@/components/IntlProvider';
 
 export const dynamic = 'force-dynamic';
+
+const inter = Inter({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-sans-app',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
@@ -38,7 +46,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
-      <body className="font-sans antialiased">
+      <body className={`${inter.variable} font-sans antialiased`}>
         <IntlProvider locale={locale} messages={messages} timeZone={timeZone}>
           {children}
           <Toaster />

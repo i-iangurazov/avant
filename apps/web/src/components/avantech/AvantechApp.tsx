@@ -64,7 +64,6 @@ function AvantechContent() {
   const highlightTimerRef = useRef<number | null>(null);
   const didSyncSelection = useRef(false);
   const sectionStateRef = useRef<Record<string, boolean>>({});
-  const cartRefreshRef = useRef(0);
 
   const currencyLabel = tCommon('labels.currency');
   const formatPriceLocalized = (amount: number) => formatPrice(amount, lang, currencyLabel);
@@ -388,19 +387,11 @@ function AvantechContent() {
     setSelectedSubcategoryId(subcategoryId);
   };
 
-  useEffect(() => {
-    if (!isCartOpen) return;
-    const now = Date.now();
-    if (now - cartRefreshRef.current < 60_000) return;
-    cartRefreshRef.current = now;
-    setReloadToken((prev) => prev + 1);
-  }, [isCartOpen]);
-
   return (
     <div className="relative min-h-screen bg-white text-foreground">
       <PwaAutoReload isBusy={isCartOpen || isOrdering} />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,40,0,0.12),transparent_55%),radial-gradient(circle_at_right,_rgba(67,37,135,0.08),transparent_50%)]" />
-      <div className="pointer-events-none absolute inset-0 opacity-50 [background-image:radial-gradient(#0000000f_1px,transparent_1px)] [background-size:18px_18px]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(80rem_48rem_at_-12%_-28%,rgba(255,72,0,0.14),transparent_60%),radial-gradient(64rem_40rem_at_108%_-12%,rgba(0,156,214,0.1),transparent_62%),linear-gradient(to_bottom,rgba(255,255,255,0.7),rgba(255,255,255,0.95))]" />
+      <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:linear-gradient(to_right,rgba(15,23,42,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.035)_1px,transparent_1px)] [background-size:24px_24px]" />
       <div className="relative">
         <Header
           entries={searchEntries}
@@ -413,7 +404,7 @@ function AvantechContent() {
           selectedSubcategoryId={selectedSubcategoryId}
           onSubcategoryChange={handleSubcategoryChange}
         />
-        <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pb-[calc(8rem+env(safe-area-inset-bottom))] pt-6 md:px-6">
+        <main className="mx-auto flex w-full max-w-6xl flex-col px-4 pb-[calc(8rem+env(safe-area-inset-bottom))] pt-6 md:px-6">
           {isLoadingCatalog ? (
             <div className="rounded-2xl border border-dashed border-border bg-muted/40 px-4 py-8 text-center text-sm text-muted-foreground">
               {tCommon('states.loading')}
@@ -441,11 +432,12 @@ function AvantechContent() {
                 id={`category-${category.id}`}
                 title={category.name}
                 count={category.products.length}
+                headerClassName="shadow-sm rounded-xl border border border-muted/70 bg-white p-4"
                 contentClassName="mt-0"
                 defaultOpen={getSectionState(`category:${category.id}`, false)}
                 onOpenChange={(open) => setSectionState(`category:${category.id}`, open)}
               >
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-2">
                   {(() => {
                     const subcategoryMap = new Map(category.subcategories.map((subcategory) => [subcategory.id, subcategory]));
                     const orderedSubcategories = [...category.subcategories].sort(
@@ -476,11 +468,11 @@ function AvantechContent() {
                         key={group.id}
                         title={group.name}
                         count={group.products.length}
-                        className="scroll-mt-16"
+                        className="scroll-mt-16 px-4"
                         headerClassName="mb-3"
-                        titleClassName="text-sm md:text-base"
+                        titleClassName="text-base md:text-base"
                         countClassName="px-2 py-0.5 text-[11px]"
-                        contentClassName="mt-0"
+                        contentClassName="mt-0 mb-4"
                         defaultOpen={getSectionState(`subcategory:${group.id}`, false)}
                         onOpenChange={(open) => setSectionState(`subcategory:${group.id}`, open)}
                       >
@@ -489,7 +481,7 @@ function AvantechContent() {
                             {tCommon('states.empty')}
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             {group.products.map((product) => (
                               <ProductCard
                                 key={product.id}

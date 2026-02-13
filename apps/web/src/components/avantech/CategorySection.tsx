@@ -56,8 +56,8 @@ export default function CategorySection({
         )}
       >
         <span className="flex items-center gap-2">
-          <ChevronDown className={cn('size-4 transition-transform', isOpen && 'rotate-180')} />
-          <span className={cn('text-lg font-semibold text-foreground md:text-xl', titleClassName)}>
+          <ChevronDown className={cn('size-5 transition-transform', isOpen && 'rotate-180')} />
+          <span className={cn('text-base font-semibold text-foreground md:text-base', titleClassName)}>
             {title}
           </span>
         </span>
