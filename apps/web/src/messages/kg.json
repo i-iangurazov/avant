@@ -50,6 +50,7 @@
     },
     "search": {
       "placeholder": "Товарларды издөө",
+      "submitLabel": "Издөө",
       "empty": "Табылган жок",
       "categoryLabel": "Категория",
       "allCategories": "Бардык категориялар",
@@ -58,6 +59,7 @@
     },
     "catalog": {
       "uncategorized": "Подкатегориясыз",
+      "searchEmpty": "Бул издөө боюнча товар табылган жок.",
       "priceFrom": "Баасы",
       "selectedPrice": "Варианттын баасы"
     },

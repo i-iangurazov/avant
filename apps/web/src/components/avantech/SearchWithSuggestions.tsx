@@ -9,14 +9,22 @@ import { cn } from '@/lib/utils';
 
 type Props = {
   entries: SearchEntry[];
+  query: string;
+  onQueryChange: (query: string) => void;
   onSelect: (entry: SearchEntry) => void;
   formatPrice: (price: number) => string;
 };
 
-export default function SearchWithSuggestions({ entries, onSelect, formatPrice }: Props) {
+export default function SearchWithSuggestions({
+  entries,
+  query,
+  onQueryChange,
+  onSelect,
+  formatPrice,
+}: Props) {
   const t = useTranslations('avantech.search');
   const containerRef = useRef<HTMLDivElement>(null);
-  const [query, setQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -43,14 +51,20 @@ export default function SearchWithSuggestions({ entries, onSelect, formatPrice }
     return () => document.removeEventListener('mousedown', handleOutside);
   }, []);
 
-  const handleSelect = (entry: SearchEntry) => {
-    setQuery(entry.subtitle);
+  const commitSearch = () => {
     setIsOpen(false);
+    setActiveIndex(-1);
+    inputRef.current?.blur();
+  };
+
+  const handleSelect = (entry: SearchEntry) => {
+    setIsOpen(false);
+    setActiveIndex(-1);
     onSelect(entry);
+    inputRef.current?.blur();
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (!isOpen) return;
     const currentIndex = safeActiveIndex;
     if (event.key === 'ArrowDown') {
       event.preventDefault();
@@ -66,41 +80,62 @@ export default function SearchWithSuggestions({ entries, onSelect, formatPrice }
       event.preventDefault();
       const entry = results[currentIndex];
       if (entry) handleSelect(entry);
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      commitSearch();
     }
     if (event.key === 'Escape') {
-      setIsOpen(false);
-      setActiveIndex(-1);
+      commitSearch();
     }
   };
 
   return (
     <div ref={containerRef} className="relative w-full">
-      <Input
-        value={query}
-        onChange={(event) => {
-          const nextQuery = event.target.value;
-          const trimmed = nextQuery.trim();
-          setQuery(nextQuery);
-          if (!trimmed) {
-            setIsOpen(false);
-            setActiveIndex(-1);
-            return;
-          }
-          if (!isOpen) setIsOpen(true);
-          const nextResults = searchCatalogEntries(entries, trimmed, 8);
-          setActiveIndex(nextResults.length > 0 ? 0 : -1);
+      <form
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          commitSearch();
         }}
-        onFocus={() => {
-          if (query.trim()) setIsOpen(true);
-        }}
-        onKeyDown={handleKeyDown}
-        placeholder={t('placeholder')}
-        aria-label={t('placeholder')}
-        className="pr-10"
-      />
-      <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-        <Search className="size-4" />
-      </div>
+      >
+        <Input
+          ref={inputRef}
+          type="search"
+          inputMode="search"
+          enterKeyHint="search"
+          autoComplete="off"
+          value={query}
+          onChange={(event) => {
+            const nextQuery = event.target.value;
+            const trimmed = nextQuery.trim();
+            onQueryChange(nextQuery);
+            if (!trimmed) {
+              setIsOpen(false);
+              setActiveIndex(-1);
+              return;
+            }
+            if (!isOpen) setIsOpen(true);
+            const nextResults = searchCatalogEntries(entries, trimmed, 8);
+            setActiveIndex(nextResults.length > 0 ? 0 : -1);
+          }}
+          onFocus={() => {
+            if (query.trim()) setIsOpen(true);
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder={t('placeholder')}
+          aria-label={t('placeholder')}
+          className="pr-11 text-base md:text-sm"
+        />
+        <button
+          type="submit"
+          aria-label={t('submitLabel')}
+          className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        >
+          <Search className="size-4" />
+        </button>
+      </form>
       {isOpen && query.trim().length > 0 && (
         <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-border bg-white shadow-lg">
           {results.length === 0 ? (

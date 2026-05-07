@@ -9,8 +9,9 @@ export async function GET(request: Request) {
   const localeParam = url.searchParams.get('locale');
   const locale = isLanguage(localeParam) ? (localeParam as Locale) : Locale.en;
   const categories = await getCatalogCategories(locale);
+
   return NextResponse.json(
-    { categories, version: buildCatalogVersion(categories) },
+    { version: buildCatalogVersion(categories) },
     { headers: { 'Cache-Control': 'no-store' } }
   );
 }

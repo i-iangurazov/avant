@@ -13,6 +13,7 @@ import {
 
 const RELOAD_KEY = 'pwa_last_refresh_at';
 const UPDATE_TOAST_ID = 'pwa-update-ready';
+const SW_UPDATE_CHECK_MS = 5 * 60 * 1000;
 
 type Props = {
   isBusy?: boolean;
@@ -167,20 +168,28 @@ export default function PwaAutoReload({
     hasBoundSwRef.current = true;
 
     let isMounted = true;
+    let updateInterval: ReturnType<typeof setInterval> | null = null;
 
     const handleUpdateReady = (registration: ServiceWorkerRegistration) => {
       if (!isMounted) return;
       swRegistrationRef.current = registration;
+      const activateAndRefresh = () => {
+        if (registration.waiting) {
+          pendingReasonRef.current = 'sw-update';
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          return;
+        }
+        attemptRefreshRef.current('sw-update');
+      };
+
       toastInfo('Доступна новая версия', {
         id: UPDATE_TOAST_ID,
         action: {
           label: 'Обновить',
-          onClick: () => {
-            registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-            attemptRefreshRef.current('sw-update');
-          },
+          onClick: activateAndRefresh,
         },
       });
+      activateAndRefresh();
     };
 
     const bindRegistration = (registration: ServiceWorkerRegistration) => {
@@ -204,6 +213,12 @@ export default function PwaAutoReload({
     navigator.serviceWorker.getRegistration().then((registration) => {
       if (!registration) return;
       bindRegistration(registration);
+      void registration.update();
+      updateInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          void registration.update();
+        }
+      }, SW_UPDATE_CHECK_MS);
     });
 
     const handleControllerChange = () => {
@@ -215,6 +230,9 @@ export default function PwaAutoReload({
 
     return () => {
       isMounted = false;
+      if (updateInterval) {
+        clearInterval(updateInterval);
+      }
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
     };
   }, [enabled]);

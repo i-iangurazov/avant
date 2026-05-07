@@ -41,6 +41,7 @@ export type CatalogCategory = {
 
 export type CatalogResponse = {
   categories: CatalogCategory[];
+  version?: string;
 };
 
 export type SearchEntry = {
@@ -146,6 +147,41 @@ export const searchCatalogEntries = (entries: SearchEntry[], query: string, limi
     })
     .slice(0, limit)
     .map((result) => result.entry);
+
+export const filterCatalogBySearch = (
+  categories: CatalogCategory[],
+  entries: SearchEntry[],
+  query: string
+) => {
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) {
+    return {
+      categories,
+      matchedVariantByProductId: new Map<string, string>(),
+    };
+  }
+
+  const matches = searchCatalogEntries(entries, trimmedQuery, entries.length);
+  const matchedProductIds = new Set<string>();
+  const matchedVariantByProductId = new Map<string, string>();
+
+  matches.forEach((entry) => {
+    matchedProductIds.add(entry.productId);
+    if (!matchedVariantByProductId.has(entry.productId)) {
+      matchedVariantByProductId.set(entry.productId, entry.variantId);
+    }
+  });
+
+  return {
+    categories: categories
+      .map((category) => ({
+        ...category,
+        products: category.products.filter((product) => matchedProductIds.has(product.id)),
+      }))
+      .filter((category) => category.products.length > 0),
+    matchedVariantByProductId,
+  };
+};
 
 export const filterCatalog = (
   categories: CatalogCategory[],

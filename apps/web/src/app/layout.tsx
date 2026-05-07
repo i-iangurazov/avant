@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { getLocale, getMessages, getTranslations, getTimeZone } from 'next-intl/server';
 import './globals.css';
@@ -6,6 +6,16 @@ import { Toaster } from '@/components/ui/sonner';
 import IntlProvider from '@/components/IntlProvider';
 
 export const dynamic = 'force-dynamic';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  minimumScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#ff2600',
+};
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -21,7 +31,6 @@ export async function generateMetadata(): Promise<Metadata> {
     description: t('common.meta.description'),
     manifest: '/manifest.webmanifest',
     applicationName: 'Авантехник',
-    themeColor: '#ff2600',
     appleWebApp: {
       capable: true,
       title: 'Авантехник',

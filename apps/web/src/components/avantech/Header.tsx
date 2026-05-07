@@ -8,6 +8,8 @@ import SearchWithSuggestions from './SearchWithSuggestions';
 
 type Props = {
   entries: SearchEntry[];
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
   onSelect: (entry: SearchEntry) => void;
   formatPrice: (price: number) => string;
   categories: Array<{ id: string; name: string }>;
@@ -20,6 +22,8 @@ type Props = {
 
 export default function Header({
   entries,
+  searchQuery,
+  onSearchQueryChange,
   onSelect,
   formatPrice,
   categories,
@@ -48,7 +52,13 @@ export default function Header({
           </div>
         </div>
         <div className="flex w-full flex-col gap-2">
-          <SearchWithSuggestions entries={entries} onSelect={onSelect} formatPrice={formatPrice} />
+          <SearchWithSuggestions
+            entries={entries}
+            query={searchQuery}
+            onQueryChange={onSearchQueryChange}
+            onSelect={onSelect}
+            formatPrice={formatPrice}
+          />
           <div className="flex flex-col gap-2">
             <div className="w-full">
               <Select value={selectedCategoryId} onValueChange={onCategoryChange}>

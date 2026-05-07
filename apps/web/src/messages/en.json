@@ -50,6 +50,7 @@
     },
     "search": {
       "placeholder": "Search products",
+      "submitLabel": "Search",
       "empty": "No matches",
       "categoryLabel": "Category",
       "allCategories": "All categories",
@@ -58,6 +59,7 @@
     },
     "catalog": {
       "uncategorized": "Uncategorized",
+      "searchEmpty": "No products match this search.",
       "priceFrom": "Price from",
       "selectedPrice": "Selected price"
     },

@@ -50,6 +50,7 @@
     },
     "search": {
       "placeholder": "Поиск товаров",
+      "submitLabel": "Искать",
       "empty": "Совпадений нет",
       "categoryLabel": "Категория",
       "allCategories": "Все категории",
@@ -58,6 +59,7 @@
     },
     "catalog": {
       "uncategorized": "Без подкатегории",
+      "searchEmpty": "По этому запросу товаров нет.",
       "priceFrom": "Цена от",
       "selectedPrice": "Цена варианта"
     },

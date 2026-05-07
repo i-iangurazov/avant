@@ -6,8 +6,9 @@ import { useTranslations } from 'next-intl';
 import { useLanguage } from '@/lib/useLanguage';
 import {
   buildSearchEntries,
-  indexCatalog,
   filterCatalog,
+  filterCatalogBySearch,
+  indexCatalog,
   type CatalogCategory,
   type CatalogResponse,
   type SearchEntry,
@@ -21,6 +22,14 @@ import { Button } from '@/components/ui/button';
 import PwaAutoReload from '@/components/PwaAutoReload';
 
 const HIGHLIGHT_MS = 1200;
+const CATALOG_VERSION_POLL_MS = 30 * 1000;
+
+const hasActiveCatalogInput = () => {
+  const active = document.activeElement as HTMLElement | null;
+  if (!active) return false;
+  const tagName = active.tagName.toLowerCase();
+  return tagName === 'input' || tagName === 'textarea' || active.isContentEditable;
+};
 
 function AvantechContent() {
   const { lang } = useLanguage();
@@ -34,12 +43,15 @@ function AvantechContent() {
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
   const [catalogError, setCatalogError] = useState(false);
+  const [catalogVersion, setCatalogVersion] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const [highlightedProductId, setHighlightedProductId] = useState<string | null>(null);
   const [autoSelectVariantId, setAutoSelectVariantId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState('all');
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState('all');
   const highlightTimerRef = useRef<number | null>(null);
+  const catalogVersionRef = useRef<string | null>(null);
   const didSyncSelection = useRef(false);
   const sectionStateRef = useRef<Record<string, boolean>>({});
 
@@ -70,6 +82,7 @@ function AvantechContent() {
         const payload = (await response.json()) as CatalogResponse;
         if (!isActive) return;
         setCategories(payload.categories ?? []);
+        setCatalogVersion(payload.version ?? null);
       } catch (error) {
         if (!isActive) return;
         if (error instanceof Error && error.name === 'AbortError') return;
@@ -88,6 +101,56 @@ function AvantechContent() {
       controller.abort();
     };
   }, [lang, reloadToken]);
+
+  useEffect(() => {
+    catalogVersionRef.current = catalogVersion;
+  }, [catalogVersion]);
+
+  useEffect(() => {
+    if (!catalogVersion) return;
+    if (catalogError) return;
+
+    let isActive = true;
+    let isChecking = false;
+
+    const checkCatalogVersion = async () => {
+      if (!isActive) return;
+      if (document.visibilityState !== 'visible') return;
+      if (isChecking) return;
+      isChecking = true;
+
+      try {
+        const response = await fetch(`/api/catalog/version?locale=${lang}`, { cache: 'no-store' });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { version?: string };
+        const nextVersion = payload.version ?? null;
+        if (!nextVersion || nextVersion === catalogVersionRef.current) return;
+
+        if (hasActiveCatalogInput()) return;
+        setReloadToken((prev) => prev + 1);
+      } finally {
+        isChecking = false;
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void checkCatalogVersion();
+    }, CATALOG_VERSION_POLL_MS);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void checkCatalogVersion();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [catalogError, catalogVersion, lang]);
 
   const { productsById, variantsById } = useMemo(() => indexCatalog(categories), [categories]);
 
@@ -186,9 +249,15 @@ function AvantechContent() {
     subcategoryById,
   ]);
 
-  const visibleCategories = useMemo(
-    () => filterCatalog(categories, selectedCategoryId, selectedSubcategoryId),
-    [categories, selectedCategoryId, selectedSubcategoryId]
+  const searchQueryTrimmed = searchQuery.trim();
+  const isSearching = searchQueryTrimmed.length > 0;
+
+  const filteredCategories = useMemo(
+    () =>
+      isSearching
+        ? categories
+        : filterCatalog(categories, selectedCategoryId, selectedSubcategoryId),
+    [categories, isSearching, selectedCategoryId, selectedSubcategoryId]
   );
 
   const categoryOptions = useMemo(
@@ -215,19 +284,30 @@ function AvantechContent() {
     return buildSearchEntries(Object.values(variantsById), productsById);
   }, [catalogError, isLoadingCatalog, productsById, variantsById]);
 
+  const searchFilteredCatalog = useMemo(
+    () => filterCatalogBySearch(filteredCategories, searchEntries, searchQueryTrimmed),
+    [filteredCategories, searchEntries, searchQueryTrimmed]
+  );
+
+  const visibleCategories = searchFilteredCatalog.categories;
+  const matchedVariantByProductId = searchFilteredCatalog.matchedVariantByProductId;
+
+  const handleSearchQueryChange = (query: string) => {
+    setSearchQuery(query);
+    if (query.trim()) {
+      setSelectedCategoryId('all');
+      setSelectedSubcategoryId('all');
+    }
+    if (!query.trim()) {
+      setHighlightedProductId(null);
+      setAutoSelectVariantId(null);
+    }
+  };
+
   const handleSearchSelect = (entry: SearchEntry) => {
-    const product = productsById[entry.productId];
+    setSearchQuery(entry.title);
     setSelectedCategoryId('all');
     setSelectedSubcategoryId('all');
-    if (product) {
-      setSectionState(`category:${product.categoryId}`, true);
-      if (product.subcategoryId) {
-        setSectionState(`subcategory:${product.subcategoryId}`, true);
-      } else {
-        setSectionState(`subcategory:${product.categoryId}-uncategorized`, true);
-      }
-    }
-
     setAutoSelectVariantId(entry.variantId);
     setHighlightedProductId(entry.productId);
 
@@ -238,19 +318,6 @@ function AvantechContent() {
     highlightTimerRef.current = window.setTimeout(() => {
       setHighlightedProductId((current) => (current === entry.productId ? null : current));
     }, HIGHLIGHT_MS);
-
-    let attempts = 0;
-    const tryScroll = () => {
-      const target = document.getElementById(`product-${entry.productId}`);
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-      if (attempts >= 6) return;
-      attempts += 1;
-      window.requestAnimationFrame(tryScroll);
-    };
-    tryScroll();
   };
 
   useEffect(() => {
@@ -276,6 +343,8 @@ function AvantechContent() {
       <div className="relative">
         <Header
           entries={searchEntries}
+          searchQuery={searchQuery}
+          onSearchQueryChange={handleSearchQueryChange}
           onSelect={handleSearchSelect}
           formatPrice={formatPriceLocalized}
           categories={categoryOptions}
@@ -306,6 +375,10 @@ function AvantechContent() {
             <div className="rounded-xl border border-dashed border-border bg-white px-4 py-8 text-center text-sm text-muted-foreground">
               {tCommon('states.empty')}
             </div>
+          ) : visibleCategories.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-white px-4 py-8 text-center text-sm text-muted-foreground">
+              {isSearching ? tCatalog('searchEmpty') : tCommon('states.empty')}
+            </div>
           ) : (
             visibleCategories.map((category) => (
               <CategorySection
@@ -315,7 +388,7 @@ function AvantechContent() {
                 count={category.products.length}
                 headerClassName="rounded-xl border border-muted/70 bg-white p-4 shadow-sm"
                 contentClassName="mt-0"
-                defaultOpen={getSectionState(`category:${category.id}`, false)}
+                defaultOpen={isSearching || getSectionState(`category:${category.id}`, false)}
                 onOpenChange={(open) => setSectionState(`category:${category.id}`, open)}
               >
                 <div className="flex flex-col gap-2">
@@ -354,7 +427,7 @@ function AvantechContent() {
                         titleClassName="text-base md:text-base"
                         countClassName="px-2 py-0.5 text-[11px]"
                         contentClassName="mt-0 mb-4"
-                        defaultOpen={getSectionState(`subcategory:${group.id}`, false)}
+                        defaultOpen={isSearching || getSectionState(`subcategory:${group.id}`, false)}
                         onOpenChange={(open) => setSectionState(`subcategory:${group.id}`, open)}
                       >
                         {group.products.length === 0 ? (
@@ -369,7 +442,11 @@ function AvantechContent() {
                                 product={product}
                                 variants={product.variants}
                                 highlight={highlightedProductId === product.id}
-                                autoSelectVariantId={autoSelectVariantId}
+                                autoSelectVariantId={
+                                  highlightedProductId === product.id
+                                    ? autoSelectVariantId
+                                    : matchedVariantByProductId.get(product.id)
+                                }
                                 formatPrice={formatPriceLocalized}
                               />
                             ))}
