@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "turbo dev --filter @plumbing/web",
+    "dev:storefront": "turbo dev --filter @plumbing/storefront",
     "dev:all": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
@@ -30,12 +31,17 @@
     ]
   },
   "devDependencies": {
-    "@typescript-eslint/parser": "^8.43.0",
     "@types/node": "^25.0.1",
+    "@typescript-eslint/parser": "^8.43.0",
     "eslint": "^9.39.2",
     "prettier": "^3.7.4",
     "tsx": "^4.21.0",
     "turbo": "^2.6.3",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "next": "16.0.10",
+    "react": "19.2.1",
+    "react-dom": "19.2.1"
   }
 }

@@ -36,9 +36,6 @@
   "avantech": {
     "brand": "Avantech Plumbing",
     "actions": {
-      "increaseQty": "Increase quantity",
-      "decreaseQty": "Decrease quantity",
-      "removeItem": "Remove item",
       "selectVariant": "Select variant: {variant}"
     },
     "attributes": {
@@ -60,17 +57,9 @@
       "allSubcategories": "All subcategories"
     },
     "catalog": {
-      "uncategorized": "Uncategorized"
-    },
-    "cart": {
-      "title": "Cart",
-      "subtitle": "Review items before ordering.",
-      "empty": "Cart is empty.",
-      "total": "Total",
-      "order": "Place order",
-      "sending": "Sending...",
-      "orderSuccess": "Order sent to Telegram.",
-      "orderFailed": "Failed to send order."
+      "uncategorized": "Uncategorized",
+      "priceFrom": "Price from",
+      "selectedPrice": "Selected price"
     },
     "auth": {
       "title": "Admin sign in",

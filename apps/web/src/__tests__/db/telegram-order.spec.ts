@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { prisma } from '@plumbing/db';
 import { POST as submitOrder } from '@/app/api/telegram-order/route';
 import { processNotificationJobs } from '@/lib/notifications/jobs';
 import { createCategory, createProduct, createVariant } from './helpers';
@@ -35,5 +36,39 @@ describe('telegram order route', () => {
 
     await processNotificationJobs({ orderId: payload.orderId });
     expect(sendTelegramMessageMock).toHaveBeenCalled();
+  });
+
+  it('uses retail pricing when the retail shop submits the order', async () => {
+    const category = await createCategory({ name: 'Смесители' });
+    const product = await createProduct({ categoryId: category.id, name: 'Mixer' });
+    const variant = await createVariant({
+      productId: product.id,
+      label: 'Chrome',
+      price: 3000,
+      priceRetail: 3600,
+    });
+
+    const response = await submitOrder(
+      new Request('http://localhost/api/telegram-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          locale: 'ru',
+          priceMode: 'retail',
+          items: [{ variantId: variant.id, quantity: 2 }],
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as { ok?: boolean; orderId?: string };
+    expect(payload.ok).toBe(true);
+    expect(payload.orderId).toBeTruthy();
+
+    const order = await prisma.storeOrder.findUnique({ where: { id: payload.orderId } });
+    const items = Array.isArray(order?.items) ? (order.items as Array<{ unitPrice?: number }>) : [];
+
+    expect(order?.total).toBe(7200);
+    expect(items[0]?.unitPrice).toBe(3600);
   });
 });

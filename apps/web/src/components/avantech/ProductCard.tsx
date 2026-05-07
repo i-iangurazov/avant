@@ -1,51 +1,42 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { CatalogProduct, CatalogVariant } from '@/lib/avantech/catalogApi';
+import type { CatalogProduct, CatalogVariant } from '@plumbing/catalog/catalogApi';
 import { formatDisplayTitle } from '@/lib/formatTitle';
 import { useLanguage } from '@/lib/useLanguage';
 import { cn } from '@/lib/utils';
 import VariantChips from './VariantChips';
-import QuantityStepper from './QuantityStepper';
 
 type Props = {
   product: CatalogProduct;
   variants: CatalogVariant[];
   highlight?: boolean;
   autoSelectVariantId?: string | null;
-  getQuantity: (variantId: string) => number;
-  setQuantity: (variantId: string, quantity: number) => void;
-  onIncrement: (variantId: string) => void;
-  onDecrement: (variantId: string) => void;
   formatPrice: (price: number) => string;
 };
-
-const attributePriority = ['diameter', 'thread', 'length', 'pressure', 'angle', 'width', 'volume', 'material'];
 
 export default function ProductCard({
   product,
   variants,
   highlight,
   autoSelectVariantId,
-  getQuantity,
-  setQuantity,
-  onIncrement,
-  onDecrement,
   formatPrice,
 }: Props) {
   const { lang } = useLanguage();
-  const t = useTranslations('avantech');
-  const tAttr = useTranslations('avantech.attributes');
+  const tCatalog = useTranslations('avantech.catalog');
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
-  const prevQuantityRef = useRef(0);
-  const prevVariantRef = useRef<string | null>(null);
-  const quantityStepperRef = useRef<HTMLDivElement | null>(null);
-  const shouldScrollToStepperRef = useRef(false);
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const productName = useMemo(() => formatDisplayTitle(product.name, lang), [product.name, lang]);
+  const imageUrl = product.imageUrl ?? null;
+  const imageSrc = imageUrl && failedImageUrl !== imageUrl ? imageUrl : null;
 
   const activeVariants = useMemo(() => variants.filter((variant) => variant.isActive), [variants]);
+  const minPrice = useMemo(() => {
+    if (activeVariants.length === 0) return null;
+    return Math.min(...activeVariants.map((variant) => variant.price));
+  }, [activeVariants]);
 
   useEffect(() => {
     if (!autoSelectVariantId) return;
@@ -55,107 +46,52 @@ export default function ProductCard({
     }
   }, [activeVariants, autoSelectVariantId]);
 
-  const selectedVariant = activeVariants.find((variant) => variant.id === selectedVariantId) ?? null;
-  const quantity = selectedVariant ? getQuantity(selectedVariant.id) : 0;
-
-  useEffect(() => {
-    if (selectedVariantId !== prevVariantRef.current) {
-      prevVariantRef.current = selectedVariantId;
-      prevQuantityRef.current = quantity;
-      return;
-    }
-    if (!selectedVariantId) {
-      prevQuantityRef.current = 0;
-      return;
-    }
-    if (prevQuantityRef.current > 0 && quantity === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedVariantId(null);
-    }
-    prevQuantityRef.current = quantity;
-  }, [quantity, selectedVariantId]);
-
-  useEffect(() => {
-    if (!shouldScrollToStepperRef.current || !selectedVariantId) return;
-    const stepperElement = quantityStepperRef.current;
-    if (!stepperElement) return;
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const floatingCartBar = document.querySelector<HTMLElement>('[data-floating-cart-bar]');
-    const floatingBarTop = floatingCartBar?.getBoundingClientRect().top ?? window.innerHeight;
-    const bottomCoveredPx = Math.max(0, window.innerHeight - floatingBarTop);
-    const extraGapPx = 20;
-    const stepperBottomDoc = window.scrollY + stepperElement.getBoundingClientRect().bottom;
-    const targetViewportBottom = window.innerHeight - bottomCoveredPx - extraGapPx;
-    const targetScrollY = Math.max(0, stepperBottomDoc - targetViewportBottom);
-
-    if (targetScrollY > window.scrollY) {
-      window.scrollTo({
-        top: targetScrollY,
-        behavior: prefersReducedMotion ? 'auto' : 'smooth',
-      });
-    }
-    shouldScrollToStepperRef.current = false;
-  }, [selectedVariantId]);
-
-  const attributePairs = useMemo(() => {
-    if (!selectedVariant) return [] as Array<{ key: string; value: string | number }>;
-    return attributePriority
-      .filter((key) => selectedVariant.attributes[key] !== undefined)
-      .slice(0, 2)
-      .map((key) => ({ key, value: selectedVariant.attributes[key]! }));
-  }, [selectedVariant]);
-
   const handleSelectVariant = (variantId: string) => {
     if (variantId === selectedVariantId) {
       setSelectedVariantId(null);
-      shouldScrollToStepperRef.current = false;
-      if (getQuantity(variantId) > 0) {
-        setQuantity(variantId, 0);
-      }
       return;
     }
-    shouldScrollToStepperRef.current = true;
     setSelectedVariantId(variantId);
-  };
-
-  const handleDecrement = () => {
-    if (!selectedVariant) return;
-    const currentQty = getQuantity(selectedVariant.id);
-    onDecrement(selectedVariant.id);
-    if (currentQty <= 1) {
-      setSelectedVariantId(null);
-    }
   };
 
   return (
     <article
       id={`product-${product.id}`}
       className={cn(
-        'flex h-full flex-col gap-3 rounded-2xl border border-border bg-white p-3 shadow-sm transition',
+        'flex h-full flex-col gap-4 rounded-xl border border-border bg-white p-3 shadow-sm transition',
         highlight && 'ring-2 ring-primary/40 motion-safe:animate-[avantech-highlight_1.1s_ease-in-out]'
       )}
     >
       <div className="flex gap-4">
-        <div className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-border bg-primary/5">
-          {product.imageUrl ? (
+        <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-primary/5">
+          {imageSrc ? (
             <Image
-              src={product.imageUrl}
+              src={imageSrc}
               alt={productName}
               fill
               sizes="96px"
               className="object-cover"
+              onError={() => setFailedImageUrl(imageSrc)}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-primary/10 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="flex h-full w-full items-center justify-center bg-primary/10 text-[10px] font-medium uppercase text-muted-foreground">
               No image
             </div>
           )}
         </div>
-        <div className="flex-1">
+        <div className="flex min-w-0 flex-1 flex-col">
           <h3 className="text-base font-semibold text-foreground">{productName}</h3>
           {product.description && (
-            <p className="mt-1 text-xs text-muted-foreground">{product.description}</p>
+            <p className="mt-1 line-clamp-3 text-xs leading-5 text-muted-foreground">{product.description}</p>
           )}
+          {minPrice !== null ? (
+            <div className="mt-auto pt-3">
+              <div className="text-[11px] font-semibold uppercase text-muted-foreground">
+                {tCatalog('priceFrom')}
+              </div>
+              <div className="mt-0.5 text-2xl font-bold text-primary">{formatPrice(minPrice)}</div>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -165,30 +101,6 @@ export default function ProductCard({
         onSelect={handleSelectVariant}
         formatPrice={formatPrice}
       />
-
-      {selectedVariant && (
-        <div className="mt-auto flex flex-col gap-3">
-          {attributePairs.length > 0 && (
-            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              {attributePairs.map(({ key, value }) => (
-                <span key={key} className="rounded-full border border-border px-2 py-1">
-                  {tAttr(key)}: {value}
-                </span>
-              ))}
-            </div>
-          )}
-          <div ref={quantityStepperRef}>
-            <QuantityStepper
-              value={quantity}
-              onIncrement={() => onIncrement(selectedVariant.id)}
-              onDecrement={handleDecrement}
-              onChange={(next) => setQuantity(selectedVariant.id, next)}
-              increaseLabel={t('actions.increaseQty')}
-              decreaseLabel={t('actions.decreaseQty')}
-            />
-          </div>
-        </div>
-      )}
     </article>
   );
 }

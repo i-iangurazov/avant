@@ -5,7 +5,7 @@ import { getSessionUser } from '@/lib/auth/session';
 export default async function LoginPage() {
   const user = await getSessionUser();
   if (user) {
-    redirect('/');
+    redirect('/admin/products');
   }
 
   return (

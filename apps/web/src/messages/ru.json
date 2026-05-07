@@ -36,9 +36,6 @@
   "avantech": {
     "brand": "Avantech Plumbing",
     "actions": {
-      "increaseQty": "Увеличить количество",
-      "decreaseQty": "Уменьшить количество",
-      "removeItem": "Удалить товар",
       "selectVariant": "Выбрать вариант: {variant}"
     },
     "attributes": {
@@ -60,17 +57,9 @@
       "allSubcategories": "Все подкатегории"
     },
     "catalog": {
-      "uncategorized": "Без подкатегории"
-    },
-    "cart": {
-      "title": "Корзина",
-      "subtitle": "Проверьте товары перед заказом.",
-      "empty": "Корзина пуста.",
-      "total": "Итого",
-      "order": "Оформить заказ",
-      "sending": "Отправка...",
-      "orderSuccess": "Заказ отправлен в Telegram.",
-      "orderFailed": "Не удалось отправить заказ."
+      "uncategorized": "Без подкатегории",
+      "priceFrom": "Цена от",
+      "selectedPrice": "Цена варианта"
     },
     "auth": {
       "title": "Вход",

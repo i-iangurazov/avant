@@ -1,0 +1,230 @@
+{
+  "common": {
+    "meta": {
+      "title": "Plumbing Store",
+      "description": "Plumbing catalog with fast ordering"
+    },
+    "labels": {
+      "currency": "KGS",
+      "dialog": "Dialog"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "close": "Close"
+    },
+    "states": {
+      "loading": "Loading...",
+      "empty": "Nothing here yet."
+    },
+    "language": {
+      "label": "Language",
+      "options": {
+        "en": "English",
+        "ru": "Russian",
+        "kg": "Kyrgyz"
+      }
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong.",
+    "invalidCredentials": "Invalid phone or password.",
+    "rateLimited": "Too many attempts. Try again later.",
+    "unauthorized": "Unauthorized.",
+    "forbidden": "Forbidden.",
+    "invalidPayload": "Invalid request."
+  },
+  "avantech": {
+    "brand": "Avantech Plumbing",
+    "actions": {
+      "increaseQty": "Increase quantity",
+      "decreaseQty": "Decrease quantity",
+      "removeItem": "Remove item",
+      "selectVariant": "Select variant: {variant}"
+    },
+    "attributes": {
+      "diameter": "Diameter",
+      "thread": "Thread",
+      "length": "Length",
+      "pressure": "Pressure",
+      "angle": "Angle",
+      "width": "Width",
+      "volume": "Volume",
+      "material": "Material"
+    },
+    "search": {
+      "placeholder": "Search products",
+      "empty": "No matches",
+      "categoryLabel": "Category",
+      "allCategories": "All categories",
+      "subcategoryLabel": "Subcategory",
+      "allSubcategories": "All subcategories"
+    },
+    "catalog": {
+      "uncategorized": "Uncategorized",
+      "priceFrom": "Price from",
+      "selectedPrice": "Selected price"
+    },
+    "cart": {
+      "title": "Cart",
+      "subtitle": "Review items before ordering.",
+      "empty": "Cart is empty.",
+      "total": "Total",
+      "order": "Place order",
+      "sending": "Sending...",
+      "orderSuccess": "Order sent to the manager.",
+      "orderFailed": "Failed to send order."
+    },
+    "auth": {
+      "title": "Admin sign in",
+      "subtitle": "Access the plumbing store admin panel.",
+      "phoneLabel": "Phone",
+      "phonePlaceholder": "+996XXXXXXXXX",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter password",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "helper": "Use the admin phone and password.",
+      "required": "Phone and password are required.",
+      "invalidPhone": "Enter a valid phone number."
+    },
+    "telegram": {
+      "title": "New plumbing order",
+      "date": "Date",
+      "total": "Total",
+      "customer": "Customer",
+      "customerName": "Name",
+      "customerPhone": "Phone",
+      "customerAddress": "Address",
+      "customerGuest": "Guest",
+      "invalidPayload": "Invalid order payload.",
+      "empty": "Order has no items."
+    }
+  },
+  "retail": {
+    "meta": {
+      "homeTitle": "Avant Santex: plumbing and household goods in Bishkek",
+      "homeDescription": "Avant Santex online store for plumbing and practical household goods. Faucets, toilets, radiators, reducers and accessories in a current catalog.",
+      "shopTitle": "Avant Santex Store",
+      "shopDescription": "Browse plumbing and home goods, compare variants, and send a request to the manager."
+    },
+    "header": {
+      "home": "Home",
+      "shop": "Shop",
+      "catalogue": "Wholesale catalogue",
+      "cart": "Cart",
+      "city": "Bishkek",
+      "tagline": "Avant Santex",
+      "login": "Login"
+    },
+    "home": {
+      "title": "Practical plumbing and home essentials without inflated pricing.",
+      "heroImageAlt": "Modern plumbing fixtures, faucets, and fittings in a bathroom setting",
+      "subtitle": "Avant Santex helps customers quickly find faucets, toilets, radiators, reducers, fittings, and everyday accessories. Browse the current assortment, compare variants, and move to purchase without extra steps.",
+      "primaryCta": "Open the shop",
+      "secondaryCta": "Wholesale catalogue",
+      "statsCategories": "Categories",
+      "statsProducts": "Products",
+      "statsPrice": "Starting price",
+      "statsPriceFallback": "Soon",
+      "highlightTitle": "Pulled from the real catalog",
+      "highlightDescription": "The storefront uses live product data from the shared database, not mock cards.",
+      "guideSearchTitle": "Fast search",
+      "guideSearchDescription": "Search by name, category, size, or description and jump straight to the right item.",
+      "guideCompareTitle": "Clear variants",
+      "guideCompareDescription": "Sizes, prices, and subcategories sit together so it is easier to choose the right position.",
+      "guideVisitTitle": "Bishkek store",
+      "guideVisitDescription": "The assortment is built for home repairs, plumbing replacement, and regular supply runs.",
+      "orderTitle": "How to choose",
+      "orderDescription": "Start with a section, compare variants, and send a request to the manager.",
+      "stepOne": "Open the shop and find the right products by category, description, size, or SKU.",
+      "stepTwo": "Compare sizes, prices, and available variants.",
+      "stepThree": "Send a request so the manager can confirm stock and details.",
+      "stepLabel": "Step {number}",
+      "featuredEyebrow": "Popular picks",
+      "featuredTitle": "What customers look for most",
+      "featuredCta": "Browse the full shop",
+      "categoriesEyebrow": "Browse by category",
+      "categoriesTitle": "Sections that make it easier to start",
+      "categoryPreviewTitle": "A catalog built for practical repair and home needs",
+      "fromLabel": "from",
+      "productFallback": "A current item from the active Avant Santex assortment.",
+      "categoryProducts": "{count} products",
+      "valuePriceTitle": "Low prices with a practical focus",
+      "valuePriceDescription": "The range stays centered on the items people actually need for repairs, replacements, and day-to-day use.",
+      "valueTrustTitle": "Current product database",
+      "valueTrustDescription": "The storefront reads from the same product base used by the manager, so cards do not feel like a random selection.",
+      "valueRangeTitle": "One shared catalog for home and plumbing",
+      "valueRangeDescription": "Faucets, toilets, radiators, reducers, fittings, and accessories live in one store backed by the same product database.",
+      "closingTitle": "Find the right item in the catalog",
+      "closingDescription": "The shop keeps categories, variants, and prices in one place so customers move from search to purchase faster."
+    },
+    "shop": {
+      "eyebrow": "Avant Santex retail shop",
+      "title": "Avant Santex plumbing shop",
+      "description": "The same database-backed assortment, presented as a retail shopping experience with search, filters, sorting, and request submission.",
+      "searchPlaceholder": "Search products, sizes, and SKUs",
+      "sortLabel": "Sort",
+      "sortPopular": "Default",
+      "sortPriceAsc": "Price: low to high",
+      "sortPriceDesc": "Price: high to low",
+      "sortName": "Name",
+      "allCategories": "All categories",
+      "allSubcategories": "All subcategories",
+      "results": "{count} products found",
+      "resultsHint": "Filter the assortment by category, size, and price.",
+      "emptyTitle": "No products match these filters",
+      "emptyDescription": "Reset the filters or try another query. The shop still reads from the same live product data.",
+      "resetFilters": "Reset filters",
+      "openCart": "Cart ({count})",
+      "fromLabel": "from",
+      "addToCart": "Add to cart",
+      "cardFallbackDescription": "A practical item from the current Avant Santex assortment.",
+      "priceLabel": "Price",
+      "variantCount": "{count} variants",
+      "orderBoxTitle": "Ordering without extra steps",
+      "orderBoxDescription": "Build the cart, send the request, and wait for the manager to confirm availability. No online payment required.",
+      "orderBoxPointOne": "Retail prices come from the same shared product database.",
+      "orderBoxPointTwo": "Once submitted, the request goes straight to the manager for processing.",
+      "wholesaleLink": "Open wholesale catalogue",
+      "stats": {
+        "products": "products",
+        "categories": "categories",
+        "order": "checkout",
+        "orderValue": "Manager request"
+      }
+    },
+    "cart": {
+      "title": "Shop cart",
+      "subtitle": "Review items and send the request to the manager.",
+      "empty": "Your cart is empty.",
+      "managerNotice": "After submission, the manager checks stock and follows up to confirm the details.",
+      "checkoutTitle": "Contact details",
+      "checkoutDescription": "These fields are required so the manager can confirm the order and delivery details.",
+      "customerName": "Name",
+      "customerNamePlaceholder": "Your name",
+      "customerPhone": "Phone",
+      "customerPhonePlaceholder": "+996 ...",
+      "customerAddress": "Address",
+      "customerAddressPlaceholder": "Delivery address",
+      "fieldRequired": "Required field.",
+      "checkoutRequired": "Enter your name, phone, and address before sending the order.",
+      "customerPhoneUnavailable": "This phone number cannot be used for storefront orders.",
+      "total": "Total",
+      "clear": "Clear",
+      "submit": "Send order",
+      "sending": "Sending...",
+      "submitSuccess": "Order sent to the manager.",
+      "submitError": "Failed to send the order.",
+      "removeItem": "Remove item",
+      "increaseQty": "Increase quantity",
+      "decreaseQty": "Decrease quantity"
+    },
+    "footer": {
+      "description": "Avant Santex offers plumbing and practical household goods for apartments, houses, and repairs in Bishkek. Fast ordering without heavy checkout.",
+      "support": "Contacts",
+      "navigationTitle": "Navigation",
+      "categoriesTitle": "Popular categories",
+      "categoriesFallback": "Categories are coming soon"
+    }
+  }
+}

@@ -10,7 +10,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toastError, toastInfo } from '@/lib/toast';
-import { formatDateTime } from '@/lib/avantech/format';
+import { formatDateTime } from '@plumbing/catalog/format';
 import { useLanguage } from '@/lib/useLanguage';
 import {
   AdminClearButton,

@@ -52,6 +52,6 @@ describe('CustomersAdmin', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Добавить клиента' }));
     expect(await screen.findByRole('heading', { name: 'Добавить клиента' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Телефон')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Телефон/)).toBeInTheDocument();
   });
 });

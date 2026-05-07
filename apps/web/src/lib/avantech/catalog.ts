@@ -1,6 +1,6 @@
 import type { Category, Product, SearchEntry, Variant, Language } from './types';
 import { getLocalizedTextRequired } from './localize';
-import { buildSearchText } from './search';
+import { buildSearchText } from '@plumbing/catalog/search';
 
 export const categories: Category[] = [
   {

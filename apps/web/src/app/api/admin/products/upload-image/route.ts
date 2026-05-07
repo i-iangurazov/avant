@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { normalizeCatalogImageUrl } from '@plumbing/catalog/images';
 import { requireAdmin } from '@/lib/auth/requireAdmin';
 import { jsonError, jsonOk } from '@/lib/apiResponse';
 import { uploadToStorage } from '@/lib/images/storage';
@@ -46,7 +47,11 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const key = `products/${Date.now()}-${randomUUID()}.${extension}`;
     const url = await uploadToStorage({ key, body: buffer, contentType: file.type });
-    return jsonOk({ url });
+    const imageUrl = normalizeCatalogImageUrl(url);
+    if (!imageUrl) {
+      throw new Error('Storage returned an invalid public image URL.');
+    }
+    return jsonOk({ url: imageUrl });
   } catch (error) {
     console.error(error);
     return jsonError({ code: 'upload_failed', message: 'Upload failed.' }, 500);

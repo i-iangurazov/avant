@@ -65,7 +65,7 @@ export default function LoginForm() {
         return;
       }
 
-      router.replace('/');
+      router.replace('/admin/products');
     } catch {
       setError({ scope: 'errors', key: 'generic' });
     } finally {

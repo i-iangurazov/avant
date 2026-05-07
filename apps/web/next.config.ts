@@ -49,7 +49,7 @@ const buildImageRemotePatterns = () => {
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  transpilePackages: ['@plumbing/db'],
+  transpilePackages: ['@plumbing/db', '@plumbing/catalog'],
   images: {
     remotePatterns: buildImageRemotePatterns(),
   },

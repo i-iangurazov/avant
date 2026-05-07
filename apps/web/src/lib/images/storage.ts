@@ -40,7 +40,15 @@ export const uploadToStorage = async (params: {
 };
 
 export const buildPublicUrl = (publicBase: string, bucket: string, key: string) => {
-  const normalizedBase = publicBase.replace(/\/$/, '');
-  const isR2Dev = normalizedBase.endsWith('.r2.dev');
-  return isR2Dev ? `${normalizedBase}/${bucket}/${key}` : `${normalizedBase}/${key}`;
+  void bucket;
+
+  const normalizedBase = publicBase.trim().replace(/\/+$/, '');
+  const normalizedKey = key
+    .trim()
+    .replace(/^\/+/, '')
+    .split('/')
+    .map(encodeURIComponent)
+    .join('/');
+
+  return `${normalizedBase}/${normalizedKey}`;
 };

@@ -4,9 +4,11 @@ import { prisma, Locale } from '@plumbing/db';
 import { defaultLocale, isLanguage } from '@/lib/i18n';
 import { getSessionUser } from '@/lib/auth/session';
 import { dispatchOrderNotifications, processNotificationJobs } from '@/lib/notifications/jobs';
+import { type PriceMode, resolveVariantPrice } from '@plumbing/catalog/pricing';
 
 const payloadSchema = z.object({
   locale: z.string().optional(),
+  priceMode: z.enum(['wholesale', 'retail']).optional(),
   items: z
     .array(
       z.object({
@@ -64,6 +66,7 @@ export async function POST(request: Request) {
 
   const language = isLanguage(parsed.data.locale) ? parsed.data.locale : defaultLocale;
   const locale = language as Locale;
+  const priceMode: PriceMode = parsed.data.priceMode ?? 'wholesale';
   const { messages, fallback } = await loadMessages(language);
   const t = (key: string) => getMessage(messages, key) ?? getMessage(fallback, key) ?? key;
   const user = await getSessionUser(request);
@@ -103,7 +106,7 @@ export async function POST(request: Request) {
     const variantTranslation = pickTranslation(variant.translations, locale);
     const productName = productTranslation?.name ?? variant.productId;
     const variantLabel = variantTranslation?.label ?? variant.sku ?? variant.id;
-    const unitPrice = variant.price;
+    const unitPrice = resolveVariantPrice(variant, priceMode);
     const subtotal = unitPrice * item.quantity;
     total += subtotal;
 

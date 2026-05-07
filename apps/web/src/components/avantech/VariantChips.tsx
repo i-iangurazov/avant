@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { CatalogVariant } from '@/lib/avantech/catalogApi';
+import type { CatalogVariant } from '@plumbing/catalog/catalogApi';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -15,7 +15,7 @@ export default function VariantChips({ variants, selectedVariantId, onSelect, fo
   const t = useTranslations('avantech');
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="grid gap-2">
       {variants.map((variant) => {
         const label = variant.label;
         const isSelected = variant.id === selectedVariantId;
@@ -27,14 +27,21 @@ export default function VariantChips({ variants, selectedVariantId, onSelect, fo
             aria-label={t('actions.selectVariant', { variant: label })}
             onClick={() => onSelect(variant.id)}
             className={cn(
-              'flex min-h-[44px] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition',
+              'grid w-full grid-cols-1 gap-3 rounded-xl border px-3.5 py-3 text-left transition sm:grid-cols-[minmax(0,1fr),auto]',
               isSelected
-                ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                ? 'border-primary/50 bg-primary/5 text-foreground shadow-sm'
                 : 'border-border bg-white text-foreground hover:border-primary/40 hover:bg-primary/5'
             )}
           >
-            <span>{label}</span>
-            <span className={cn('text-xs', isSelected ? 'text-white/80' : 'text-muted-foreground')}>
+            <span className="min-w-0 whitespace-normal break-words text-sm font-medium leading-6 text-foreground">
+              {label}
+            </span>
+            <span
+              className={cn(
+                'justify-self-end whitespace-nowrap rounded-md px-1 text-right text-base font-bold leading-tight text-primary sm:self-end',
+                isSelected ? 'bg-primary/10' : 'bg-transparent'
+              )}
+            >
               {formatPrice(variant.price)}
             </span>
           </button>

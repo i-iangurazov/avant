@@ -309,7 +309,7 @@ export default function ProductsAdmin() {
       );
       const responsePayload = (await response.json().catch(() => null)) as { message?: string } | null;
       if (!response.ok) {
-        setFormError('Не удалось сохранить товар.');
+        setFormError(responsePayload?.message ?? 'Не удалось сохранить товар.');
         return;
       }
       setDialogOpen(false);

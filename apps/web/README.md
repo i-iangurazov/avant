@@ -44,15 +44,23 @@ S3_SECRET_ACCESS_KEY=
 S3_PUBLIC_BASE_URL=
 ```
 
+`S3_PUBLIC_BASE_URL` must be the exact public image base. For Cloudflare R2 public
+development URLs this is normally the bucket-specific `*.r2.dev` URL, so product
+image URLs are saved as `${S3_PUBLIC_BASE_URL}/products/...` without adding
+`S3_BUCKET` to the public path.
+
 ## Routes
 
 Pages:
-- `/` storefront
+- `/` public catalogue
+- `/catalogue` catalogue alias redirect
 - `/login` admin sign in
 - `/admin/taxonomy` taxonomy admin
 - `/admin/products` products admin
 - `/admin/customers` customers admin
 - `/admin/orders` orders admin
+
+The advanced storefront lives in the independent `../storefront` app. This web app should not expose storefront preview, shop, cart, favourites, checkout, or marketing homepage routes. See `docs/product-surfaces.md` for the catalogue/storefront separation.
 
 API (admin routes require an admin session cookie):
 - `GET /api/catalog?locale=en|ru|kg` catalog payload
@@ -121,6 +129,12 @@ pnpm --filter @plumbing/web run dev
 pnpm --filter @plumbing/web run build
 pnpm --filter @plumbing/web run typecheck
 pnpm --filter @plumbing/web run lint
+
+# Storefront app
+pnpm --filter @plumbing/storefront run dev
+pnpm --filter @plumbing/storefront run build
+pnpm --filter @plumbing/storefront run typecheck
+pnpm --filter @plumbing/storefront run lint
 
 # Tests
 pnpm --filter @plumbing/web test

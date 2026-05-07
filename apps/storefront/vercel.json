@@ -1,0 +1,4 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "printf '\\nERROR: deploy the storefront from the repository root, not apps/storefront.\\nRun: cd ../.. && vercel --prod\\n\\n' && exit 1"
+}

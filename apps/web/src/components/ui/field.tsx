@@ -37,7 +37,7 @@ function Field({
     >
       <span className="text-sm font-medium text-foreground">
         {label}
-        {required ? <span className="text-destructive"> *</span> : null}
+        {required ? <span aria-hidden="true" className="text-destructive"> *</span> : null}
       </span>
       {children}
     </LabelPrimitive.Root>
@@ -74,7 +74,7 @@ function FieldLabel({
       {...props}
     >
       {children}
-      {required ? <span className="text-destructive"> *</span> : null}
+      {required ? <span aria-hidden="true" className="text-destructive"> *</span> : null}
     </LabelPrimitive.Root>
   )
 }

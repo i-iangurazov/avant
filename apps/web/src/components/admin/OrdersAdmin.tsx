@@ -11,8 +11,8 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { formatDateTime, formatPrice } from '@/lib/avantech/format';
-import { matchesSearchTextPrefix } from '@/lib/avantech/search';
+import { formatDateTime, formatPrice } from '@plumbing/catalog/format';
+import { matchesSearchTextPrefix } from '@plumbing/catalog/search';
 import {
   buildSearchEntries,
   indexCatalog,
@@ -20,7 +20,7 @@ import {
   type CatalogProduct,
   type CatalogVariant,
   type SearchEntry,
-} from '@/lib/avantech/catalogApi';
+} from '@plumbing/catalog/catalogApi';
 import {
   AdminClearButton,
   AdminEmptyState,
@@ -510,7 +510,7 @@ export default function OrdersAdmin() {
     }
   };
 
-  const handleSendTelegram = async () => {
+  const handleSendNotification = async () => {
     if (!detailOrder) return;
     setDetailSending(true);
     try {
@@ -528,9 +528,9 @@ export default function OrdersAdmin() {
       <Button type="submit" form={detailFormId} disabled={detailSubmitting}>
         {detailSubmitting ? 'Сохранение...' : 'Сохранить изменения'}
       </Button>
-      <Button type="button" variant="outline" onClick={handleSendTelegram} disabled={detailSending}>
+      <Button type="button" variant="outline" onClick={handleSendNotification} disabled={detailSending}>
         <Send className="size-4" />
-        {detailSending ? 'Отправка...' : 'Отправить в Telegram'}
+        {detailSending ? 'Отправка...' : 'Отправить уведомление'}
       </Button>
       <Button type="button" variant="outline" onClick={() => setDetailOpen(false)}>
         Закрыть
@@ -967,7 +967,7 @@ export default function OrdersAdmin() {
           }
         }}
         title="Детали заказа"
-        description="Обновите статус, позиции или отправьте в Telegram."
+        description="Обновите статус, позиции или отправьте уведомление менеджеру."
         size="xl"
         variant="sheetOnMobile"
         footer={detailFooter}

@@ -1,4 +1,4 @@
-const normalizeSearchValue = (value: string) =>
+export const normalizeSearchValue = (value: string) =>
   value
     .toLowerCase()
     .replace(/[\u2019']/g, '')

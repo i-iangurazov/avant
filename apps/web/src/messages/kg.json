@@ -36,9 +36,6 @@
   "avantech": {
     "brand": "Avantech Plumbing",
     "actions": {
-      "increaseQty": "Санын көбөйтүү",
-      "decreaseQty": "Санын азайтуу",
-      "removeItem": "Товарды алып салуу",
       "selectVariant": "Вариант тандоо: {variant}"
     },
     "attributes": {
@@ -60,17 +57,9 @@
       "allSubcategories": "Бардык төмөнкү категориялар"
     },
     "catalog": {
-      "uncategorized": "Подкатегориясыз"
-    },
-    "cart": {
-      "title": "Себет",
-      "subtitle": "Заказдан мурун товарларды текшериңиз.",
-      "empty": "Себет бош.",
-      "total": "Жалпы",
-      "order": "Заказ берүү",
-      "sending": "Жөнөтүлүүдө...",
-      "orderSuccess": "Заказ Telegram'га жөнөтүлдү.",
-      "orderFailed": "Заказды жөнөтүү мүмкүн болгон жок."
+      "uncategorized": "Подкатегориясыз",
+      "priceFrom": "Баасы",
+      "selectedPrice": "Варианттын баасы"
     },
     "auth": {
       "title": "Админ кирүү",

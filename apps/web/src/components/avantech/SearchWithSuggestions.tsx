@@ -4,8 +4,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslations } from 'next-intl';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import type { SearchEntry } from '@/lib/avantech/catalogApi';
-import { matchesSearchTextPrefix } from '@/lib/avantech/search';
+import { searchCatalogEntries, type SearchEntry } from '@plumbing/catalog/catalogApi';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -24,7 +23,7 @@ export default function SearchWithSuggestions({ entries, onSelect, formatPrice }
   const results = useMemo(() => {
     const trimmedQuery = query.trim();
     if (!trimmedQuery) return [];
-    return entries.filter((entry) => matchesSearchTextPrefix(entry.searchText, trimmedQuery)).slice(0, 8);
+    return searchCatalogEntries(entries, trimmedQuery, 8);
   }, [entries, query]);
 
   const safeActiveIndex = useMemo(() => {
@@ -88,9 +87,7 @@ export default function SearchWithSuggestions({ entries, onSelect, formatPrice }
             return;
           }
           if (!isOpen) setIsOpen(true);
-          const nextResults = entries
-            .filter((entry) => matchesSearchTextPrefix(entry.searchText, trimmed))
-            .slice(0, 8);
+          const nextResults = searchCatalogEntries(entries, trimmed, 8);
           setActiveIndex(nextResults.length > 0 ? 0 : -1);
         }}
         onFocus={() => {

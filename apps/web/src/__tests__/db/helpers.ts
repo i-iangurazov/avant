@@ -131,6 +131,7 @@ export const createVariant = async (params: {
   sku?: string | null;
   label: string;
   price: number;
+  priceRetail?: number;
   attributes?: Prisma.InputJsonValue;
 }) => {
   return prisma.variant.create({
@@ -138,7 +139,7 @@ export const createVariant = async (params: {
       productId: params.productId,
       sku: params.sku ?? null,
       price: params.price,
-      priceRetail: params.price,
+      priceRetail: params.priceRetail ?? params.price,
       isActive: true,
       attributes: params.attributes ?? {},
       translations: { create: [{ locale: Locale.ru, label: params.label }] },

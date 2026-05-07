@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma, Locale, Prisma } from '@plumbing/db';
+import { normalizeCatalogImageUrl } from '@plumbing/catalog/images';
 import { requireAdmin } from '@/lib/auth/requireAdmin';
 import { jsonError, jsonErrorFromZod, jsonOk } from '@/lib/apiResponse';
 import { normalizeWhitespace } from '@/lib/importer/normalize';
@@ -18,7 +19,7 @@ const productSchema = z.object({
   name: z.string().min(1),
   categoryId: z.string().min(1),
   subcategoryId: z.string().optional().nullable(),
-  imageUrl: z.string().optional().nullable(),
+  imageUrl: z.string().max(2048).optional().nullable(),
   slug: z.string().optional().nullable(),
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
@@ -97,7 +98,7 @@ export async function GET(request: Request) {
           name: product.subcategory.translations[0]?.name ?? product.subcategory.id,
         }
       : null,
-    imageUrl: product.imageUrl ?? null,
+    imageUrl: normalizeCatalogImageUrl(product.imageUrl),
     sortOrder: product.sortOrder,
     isActive: product.isActive,
     variantCount: product._count.variants,
@@ -147,6 +148,11 @@ export async function POST(request: Request) {
   const slugInput = normalizeWhitespace(parsed.data.slug ?? '');
   const baseSlug = slugify(slugInput || name);
   const slug = baseSlug ? await buildUniqueSlug(baseSlug) : null;
+  const rawImageUrl = parsed.data.imageUrl?.trim() ?? '';
+  const imageUrl = rawImageUrl ? normalizeCatalogImageUrl(rawImageUrl) : null;
+  if (rawImageUrl && !imageUrl) {
+    return jsonError({ code: 'invalid_image_url', message: 'Некорректный URL изображения.' }, 400);
+  }
 
   const maxSort = await prisma.product.aggregate({
     where: { categoryId: parsed.data.categoryId },
@@ -160,7 +166,7 @@ export async function POST(request: Request) {
       subcategoryId: parsed.data.subcategoryId ?? null,
       sortOrder,
       slug: slug || undefined,
-      imageUrl: parsed.data.imageUrl ?? null,
+      imageUrl,
       isActive: parsed.data.isActive ?? true,
       translations: { create: [{ locale: Locale.ru, name }] },
       variants: {
@@ -184,7 +190,7 @@ export async function POST(request: Request) {
     product: {
       id: product.id,
       name: product.translations[0]?.name ?? name,
-      imageUrl: product.imageUrl ?? null,
+      imageUrl: normalizeCatalogImageUrl(product.imageUrl),
       isActive: product.isActive,
     },
   });

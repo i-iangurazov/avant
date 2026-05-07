@@ -1,4 +1,5 @@
 import { prisma, Locale, Prisma } from '@plumbing/db';
+import { normalizeCatalogImageUrl } from '@plumbing/catalog/images';
 import { requireAdmin } from '@/lib/auth/requireAdmin';
 import { jsonError, jsonOk } from '@/lib/apiResponse';
 import { normalizeWhitespace } from '@/lib/importer/normalize';
@@ -82,7 +83,7 @@ export async function POST(
       subcategoryId: product.subcategoryId ?? null,
       sortOrder,
       slug: slug || undefined,
-      imageUrl: product.imageUrl ?? null,
+      imageUrl: normalizeCatalogImageUrl(product.imageUrl),
       description: product.description ?? null,
       isActive: true,
       translations: { create: translations },
@@ -124,7 +125,7 @@ export async function POST(
             name: duplicate.subcategory.translations[0]?.name ?? duplicate.subcategory.id,
           }
         : null,
-      imageUrl: duplicate.imageUrl ?? null,
+      imageUrl: normalizeCatalogImageUrl(duplicate.imageUrl),
       sortOrder: duplicate.sortOrder,
       isActive: duplicate.isActive,
       variantCount: duplicate._count.variants,

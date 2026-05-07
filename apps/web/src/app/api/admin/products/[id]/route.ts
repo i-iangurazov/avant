@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma, Locale, Prisma } from '@plumbing/db';
+import { normalizeCatalogImageUrl } from '@plumbing/catalog/images';
 import { requireAdmin } from '@/lib/auth/requireAdmin';
 import { jsonError, jsonErrorFromZod, jsonOk } from '@/lib/apiResponse';
 import { normalizeWhitespace } from '@/lib/importer/normalize';
@@ -18,7 +19,7 @@ const productSchema = z.object({
   name: z.string().min(1),
   categoryId: z.string().min(1),
   subcategoryId: z.string().optional().nullable(),
-  imageUrl: z.string().optional().nullable(),
+  imageUrl: z.string().max(2048).optional().nullable(),
   slug: z.string().optional().nullable(),
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
@@ -85,7 +86,7 @@ export async function GET(
       name: product.translations[0]?.name ?? product.id,
       categoryId: product.categoryId,
       subcategoryId: product.subcategoryId ?? null,
-      imageUrl: product.imageUrl ?? null,
+      imageUrl: normalizeCatalogImageUrl(product.imageUrl),
       sortOrder: product.sortOrder,
       isActive: product.isActive,
       variants: product.variants.map((variant) => ({
@@ -168,6 +169,11 @@ export async function PATCH(
   }
 
   const sortOrder = parsed.data.sortOrder ?? existing.sortOrder;
+  const rawImageUrl = parsed.data.imageUrl?.trim() ?? '';
+  const imageUrl = rawImageUrl ? normalizeCatalogImageUrl(rawImageUrl) : null;
+  if (rawImageUrl && !imageUrl) {
+    return jsonError({ code: 'invalid_image_url', message: 'Некорректный URL изображения.' }, 400);
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.product.update({
@@ -177,7 +183,7 @@ export async function PATCH(
         subcategoryId: parsed.data.subcategoryId ?? null,
         sortOrder,
         slug: slug === undefined ? existing.slug : slug,
-        imageUrl: parsed.data.imageUrl ?? null,
+        imageUrl,
         isActive: parsed.data.isActive ?? existing.isActive,
       },
     });
