@@ -147,3 +147,17 @@ docker compose -f infra/docker/compose.yml down
 docker compose -f infra/docker/compose.test.yml up -d
 docker compose -f infra/docker/compose.test.yml down
 ```
+
+## Vercel Deployment
+
+Create a Vercel project for the admin/catalogue app with Root Directory set to
+`apps/web`. Do not reuse the storefront Vercel project.
+
+This app has its own `vercel.json`:
+
+- Install Command: `cd ../.. && pnpm install --frozen-lockfile`
+- Build Command: `cd ../.. && pnpm --filter @plumbing/db run prisma:generate && pnpm --filter @plumbing/web run build`
+- Output Directory: `.next`
+
+Keep "Include source files outside of the Root Directory in the Build Step"
+enabled because the web app depends on `packages/catalog` and `packages/db`.

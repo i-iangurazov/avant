@@ -32,28 +32,22 @@ pnpm --filter @plumbing/storefront run build
 
 ## Vercel Deployment
 
-Deploy the storefront from the repository root, not from `apps/storefront`.
-The storefront depends on the workspace packages in `packages/catalog` and
-`packages/db`, so Vercel must see the root `pnpm-lock.yaml`,
-`pnpm-workspace.yaml`, and shared packages.
+Create a separate Vercel project for this app with Root Directory set to
+`apps/storefront`. Do not use the same Vercel project as `apps/web`.
 
-From the repository root:
+This app has its own `vercel.json`:
 
-```bash
-vercel link
-vercel --prod
-```
+- Install Command: `cd ../.. && pnpm install --frozen-lockfile`
+- Build Command: `cd ../.. && pnpm --filter @plumbing/db run prisma:generate && pnpm --filter @plumbing/storefront run build`
+- Output Directory: `.next`
 
-The root `vercel.json` is configured for the storefront:
+The `cd ../..` prefix is intentional. The app depends on workspace packages in
+`packages/catalog` and `packages/db`, so the build must install and build from
+the monorepo root while Vercel still publishes this app's `.next` directory.
 
-- Install Command: `pnpm install --frozen-lockfile`
-- Build Command: `pnpm --filter @plumbing/db run prisma:generate && pnpm --filter @plumbing/storefront run build`
-- Output Directory: `apps/storefront/.next`
-
-If configuring the project in the Vercel dashboard/Git integration, keep the
-project root at the repository root. Do not set the root directory to
-`apps/storefront`, otherwise Vercel may run `npm install` inside the app and
-fail on `workspace:^` dependencies.
+In the Vercel dashboard, keep "Include source files outside of the Root
+Directory in the Build Step" enabled so the shared workspace packages are
+available during install and build.
 
 Set the production environment variables in Vercel before deploying:
 
