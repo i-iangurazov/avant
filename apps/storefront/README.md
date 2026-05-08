@@ -32,22 +32,41 @@ pnpm --filter @plumbing/storefront run build
 
 ## Vercel Deployment
 
-Create a separate Vercel project for this app with Root Directory set to
-`apps/storefront`. Do not use the same Vercel project as `apps/web`.
+Create a separate Vercel project for this app. Do not use the same Vercel
+project as `apps/web`.
 
-This app has its own `vercel.json`:
+Deploy the storefront from the monorepo root so Vercel uploads the workspace
+packages and lockfile required by this app:
 
-- Install Command: `cd ../.. && pnpm install --frozen-lockfile`
-- Build Command: `cd ../.. && pnpm --filter @plumbing/db run prisma:generate && pnpm --filter @plumbing/storefront run build`
-- Output Directory: `.next`
+```bash
+pnpm --filter @plumbing/storefront run deploy
+```
 
-The `cd ../..` prefix is intentional. The app depends on workspace packages in
-`packages/catalog` and `packages/db`, so the build must install and build from
-the monorepo root while Vercel still publishes this app's `.next` directory.
+From inside `apps/storefront`, the same command is:
 
-In the Vercel dashboard, keep "Include source files outside of the Root
-Directory in the Build Step" enabled so the shared workspace packages are
-available during install and build.
+```bash
+pnpm deploy
+```
+
+The equivalent raw Vercel CLI command from `apps/storefront` is:
+
+```bash
+cd ../.. && vercel --local-config vercel.storefront.json --prod
+```
+
+Do not run bare `vercel --prod` from `apps/storefront`. That uploads only the
+app folder, so Vercel cannot install the shared workspace packages and may fail
+with "No Next.js version detected".
+
+The deployment command uses `vercel.storefront.json` at the repository root:
+
+- Install Command: `pnpm install --frozen-lockfile`
+- Build Command: `pnpm --filter @plumbing/db run prisma:generate && pnpm --filter @plumbing/storefront run build`
+- Output Directory: `apps/storefront/.next`
+
+If configuring the Vercel dashboard manually, keep the project Root Directory as
+the repository root (`.`), use the same commands above, and publish
+`apps/storefront/.next`.
 
 Set the production environment variables in Vercel before deploying:
 

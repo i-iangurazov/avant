@@ -11,6 +11,8 @@
     "build": "set -a; [ -f ../../.env ] && . ../../.env; [ -f ../../.env.local ] && . ../../.env.local; [ -f ./.env ] && . ./.env; [ -f ./.env.local ] && . ./.env.local; set +a; next build --webpack",
     "vercel-build": "pnpm --filter @plumbing/db run prisma:generate && pnpm --filter @plumbing/storefront run build",
     "start": "set -a; [ -f ../../.env ] && . ../../.env; [ -f ../../.env.local ] && . ../../.env.local; [ -f ./.env ] && . ./.env; [ -f ./.env.local ] && . ./.env.local; set +a; next start -p ${PORT:-3001}",
+    "deploy": "cd ../.. && vercel --local-config vercel.storefront.json --prod",
+    "deploy:preview": "cd ../.. && vercel --local-config vercel.storefront.json",
     "lint": "eslint",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
