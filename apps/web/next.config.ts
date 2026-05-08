@@ -6,7 +6,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n.ts');
 const withPwa = withNextPwa({
   dest: 'public',
   disable: process.env.NODE_ENV !== 'production',
-  register: true,
+  register: false,
   skipWaiting: true,
   runtimeCaching: [],
 });

@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { buildStoragePublicUrl } from '@plumbing/catalog/images';
 
 const requireEnv = (key: string) => {
   const value = process.env[key];
@@ -40,15 +41,5 @@ export const uploadToStorage = async (params: {
 };
 
 export const buildPublicUrl = (publicBase: string, bucket: string, key: string) => {
-  void bucket;
-
-  const normalizedBase = publicBase.trim().replace(/\/+$/, '');
-  const normalizedKey = key
-    .trim()
-    .replace(/^\/+/, '')
-    .split('/')
-    .map(encodeURIComponent)
-    .join('/');
-
-  return `${normalizedBase}/${normalizedKey}`;
+  return buildStoragePublicUrl(publicBase, bucket, key);
 };

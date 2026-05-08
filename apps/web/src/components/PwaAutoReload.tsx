@@ -210,8 +210,14 @@ export default function PwaAutoReload({
       });
     };
 
-    navigator.serviceWorker.getRegistration().then((registration) => {
+    navigator.serviceWorker.getRegistration().then(async (existingRegistration) => {
+      const registration =
+        existingRegistration ??
+        (process.env.NODE_ENV === 'production'
+          ? await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          : null);
       if (!registration) return;
+
       bindRegistration(registration);
       void registration.update();
       updateInterval = setInterval(() => {

@@ -4,9 +4,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { type CatalogCategory, type CatalogVariant } from '@plumbing/catalog/catalogApi';
+import {
+  buildSearchEntries,
+  indexCatalog,
+  searchCatalogEntries,
+  type CatalogCategory,
+  type CatalogVariant,
+} from '@plumbing/catalog/catalogApi';
 import { formatPrice } from '@plumbing/catalog/format';
-import { matchesSearchText } from '@plumbing/catalog/search';
 import { type CartItemInput, useCartStore } from '@/lib/cart/cartStore';
 import { resolveVariantPrice } from '@plumbing/catalog/pricing';
 import { flattenRetailCatalog, sortRetailItems, type RetailSortOption } from '@/lib/retail/catalog';
@@ -77,6 +82,11 @@ export default function RetailShopPage({ categories, basePath = '' }: Props) {
   const formatPriceLocalized = (amount: number) => formatPrice(amount, lang, currencyLabel);
 
   const retailItems = useMemo(() => flattenRetailCatalog(categories), [categories]);
+  const { productsById, variantsById } = useMemo(() => indexCatalog(categories), [categories]);
+  const searchEntries = useMemo(
+    () => buildSearchEntries(Object.values(variantsById), productsById),
+    [productsById, variantsById]
+  );
 
   const categoryById = useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
@@ -179,16 +189,35 @@ export default function RetailShopPage({ categories, basePath = '' }: Props) {
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim();
+    const isSearching = normalizedQuery.length > 0;
+    const searchOrderByProductId = new Map<string, number>();
+
+    if (isSearching) {
+      searchCatalogEntries(searchEntries, normalizedQuery, searchEntries.length).forEach((entry) => {
+        if (!searchOrderByProductId.has(entry.productId)) {
+          searchOrderByProductId.set(entry.productId, searchOrderByProductId.size);
+        }
+      });
+    }
 
     const filtered = retailItems.filter((item) => {
+      if (isSearching) return searchOrderByProductId.has(item.product.id);
       if (selectedCategoryId !== 'all' && item.category.id !== selectedCategoryId) return false;
       if (selectedSubcategoryId !== 'all' && item.subcategory?.id !== selectedSubcategoryId) return false;
-      if (normalizedQuery && !matchesSearchText(item.searchText, normalizedQuery)) return false;
       return true;
     });
 
+    if (isSearching) {
+      return filtered.sort((left, right) => {
+        const leftOrder = searchOrderByProductId.get(left.product.id) ?? Number.MAX_SAFE_INTEGER;
+        const rightOrder = searchOrderByProductId.get(right.product.id) ?? Number.MAX_SAFE_INTEGER;
+        if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+        return left.product.name.localeCompare(right.product.name, 'ru');
+      });
+    }
+
     return sortRetailItems(filtered, sort);
-  }, [query, retailItems, selectedCategoryId, selectedSubcategoryId, sort]);
+  }, [query, retailItems, searchEntries, selectedCategoryId, selectedSubcategoryId, sort]);
 
   const cartLines = useMemo<CartLine[]>(
     () =>
@@ -368,14 +397,34 @@ export default function RetailShopPage({ categories, basePath = '' }: Props) {
         <section className="rounded-md border border-border bg-white p-4 shadow-sm">
           <div className="grid gap-3 lg:grid-cols-[1fr,280px]">
             <div className="relative">
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={tShop('searchPlaceholder')}
-                aria-label={tShop('searchPlaceholder')}
-                className="h-12 rounded-md border-border pl-11"
-              />
-              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <form
+                role="search"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  (event.currentTarget.elements.namedItem('storefront-search') as HTMLInputElement | null)?.blur();
+                }}
+              >
+                <Input
+                  id="storefront-search"
+                  name="storefront-search"
+                  type="search"
+                  inputMode="search"
+                  enterKeyHint="search"
+                  autoComplete="off"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={tShop('searchPlaceholder')}
+                  aria-label={tShop('searchPlaceholder')}
+                  className="h-12 rounded-md border-border pl-11 pr-11 text-base md:text-sm"
+                />
+                <button
+                  type="submit"
+                  aria-label={tShop('searchPlaceholder')}
+                  className="absolute left-2.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition hover:bg-slate-100 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                >
+                  <Search className="size-4" />
+                </button>
+              </form>
             </div>
             <Select value={sort} onValueChange={(value) => setSort(value as RetailSortOption)}>
               <SelectTrigger aria-label={tShop('sortLabel')} contentId="retail-shop-sort">

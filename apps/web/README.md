@@ -44,10 +44,10 @@ S3_SECRET_ACCESS_KEY=
 S3_PUBLIC_BASE_URL=
 ```
 
-`S3_PUBLIC_BASE_URL` must be the exact public image base. For Cloudflare R2 public
-development URLs this is normally the bucket-specific `*.r2.dev` URL, so product
-image URLs are saved as `${S3_PUBLIC_BASE_URL}/products/...` without adding
-`S3_BUCKET` to the public path.
+For default Cloudflare R2 public `*.r2.dev` URLs, product image URLs include the
+bucket path, for example `${S3_PUBLIC_BASE_URL}/${S3_BUCKET}/products/...`.
+If `S3_PUBLIC_BASE_URL` already includes a path such as `/plumbing-images`, it
+will not be duplicated. Custom CDN domains keep the configured path exactly.
 
 ## Routes
 

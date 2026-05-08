@@ -2,9 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { buildPublicUrl } from '@/lib/images/storage';
 
 describe('buildPublicUrl', () => {
-  it('uses r2.dev public base URLs exactly as configured', () => {
+  it('adds the bucket prefix for default r2.dev public URLs', () => {
     const url = buildPublicUrl('https://example.r2.dev', 'plumbing-bucket', 'products/item.png');
-    expect(url).toBe('https://example.r2.dev/products/item.png');
+    expect(url).toBe('https://example.r2.dev/plumbing-bucket/products/item.png');
+  });
+
+  it('does not duplicate an r2.dev bucket prefix when already configured', () => {
+    const url = buildPublicUrl('https://example.r2.dev/plumbing-bucket', 'plumbing-bucket', 'products/item.png');
+    expect(url).toBe('https://example.r2.dev/plumbing-bucket/products/item.png');
   });
 
   it('keeps custom domain base URLs without adding bucket', () => {

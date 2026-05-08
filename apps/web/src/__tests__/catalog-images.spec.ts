@@ -15,6 +15,33 @@ describe('normalizeCatalogImageUrl', () => {
     expect(normalizeCatalogImageUrl('/avantech/pipe.svg')).toBe('/avantech/pipe.svg');
   });
 
+  it('repairs stored r2.dev URLs that are missing the configured bucket path', () => {
+    const previousBase = process.env.S3_PUBLIC_BASE_URL;
+    const previousBucket = process.env.S3_BUCKET;
+    process.env.S3_PUBLIC_BASE_URL = 'https://example.r2.dev';
+    process.env.S3_BUCKET = 'plumbing-images';
+
+    try {
+      expect(normalizeCatalogImageUrl('https://example.r2.dev/products/item.png')).toBe(
+        'https://example.r2.dev/plumbing-images/products/item.png'
+      );
+      expect(normalizeCatalogImageUrl('https://example.r2.dev/plumbing-images/products/item.png')).toBe(
+        'https://example.r2.dev/plumbing-images/products/item.png'
+      );
+    } finally {
+      if (previousBase === undefined) {
+        delete process.env.S3_PUBLIC_BASE_URL;
+      } else {
+        process.env.S3_PUBLIC_BASE_URL = previousBase;
+      }
+      if (previousBucket === undefined) {
+        delete process.env.S3_BUCKET;
+      } else {
+        process.env.S3_BUCKET = previousBucket;
+      }
+    }
+  });
+
   it('rejects malformed or unsafe values', () => {
     expect(normalizeCatalogImageUrl('$2b')).toBeNull();
     expect(normalizeCatalogImageUrl('javascript:alert(1)')).toBeNull();
