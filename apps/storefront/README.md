@@ -35,8 +35,17 @@ pnpm --filter @plumbing/storefront run build
 Create a separate Vercel project for this app. Do not use the same Vercel
 project as `apps/web`.
 
-Deploy the storefront from the monorepo root so Vercel uploads the workspace
-packages and lockfile required by this app:
+Recommended Vercel project settings:
+
+- Root Directory: `apps/storefront`
+- Include source files outside the Root Directory: enabled
+- Install Command: `cd ../.. && pnpm install --frozen-lockfile`
+- Build Command: `cd ../.. && pnpm --filter @plumbing/db run prisma:generate && pnpm --filter @plumbing/storefront run build`
+- Output Directory: `.next`
+- Node.js Version: `20.x`
+
+For manual CLI production deploys, deploy the storefront from the monorepo root
+so Vercel uploads the workspace packages and lockfile required by this app:
 
 ```bash
 pnpm --filter @plumbing/storefront run deploy
@@ -54,9 +63,9 @@ The equivalent raw Vercel CLI command from `apps/storefront` is:
 cd ../.. && vercel --local-config vercel.storefront.json --prod
 ```
 
-Do not run bare `vercel --prod` from `apps/storefront`. That uploads only the
-app folder, so Vercel cannot install the shared workspace packages and may fail
-with "No Next.js version detected".
+Do not run bare `vercel --prod` from `apps/storefront` for local CLI deploys.
+That uploads only the app folder, so Vercel cannot install the shared workspace
+packages and may fail with "No Next.js version detected".
 
 The deployment command uses `vercel.storefront.json` at the repository root:
 
@@ -65,8 +74,8 @@ The deployment command uses `vercel.storefront.json` at the repository root:
 - Output Directory: `apps/storefront/.next`
 
 If configuring the Vercel dashboard manually, keep the project Root Directory as
-the repository root (`.`), use the same commands above, and publish
-`apps/storefront/.next`.
+`apps/storefront`, keep source files outside the root enabled, and use the
+commands listed above.
 
 Set the production environment variables in Vercel before deploying:
 
