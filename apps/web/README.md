@@ -48,6 +48,9 @@ For default Cloudflare R2 public `*.r2.dev` URLs, product image URLs include the
 bucket path, for example `${S3_PUBLIC_BASE_URL}/${S3_BUCKET}/products/...`.
 If `S3_PUBLIC_BASE_URL` already includes a path such as `/plumbing-images`, it
 will not be duplicated. Custom CDN domains keep the configured path exactly.
+Product image fields accept http/https links, protocol-relative links,
+root-relative paths, and `data:image/...` URLs. Data URLs and uploaded image
+files are persisted to S3-compatible storage before the product record is saved.
 
 ## Routes
 
@@ -82,7 +85,7 @@ API (admin routes require an admin session cookie):
 - `GET /api/admin/products/:id` product detail
 - `PATCH /api/admin/products/:id` update product + variants
 - `DELETE /api/admin/products/:id` disable product
-- `POST /api/admin/products/upload-image` upload image (jpeg/png/webp, max 5MB)
+- `POST /api/admin/products/upload-image` upload or resolve product image source
 - `GET /api/admin/customers?q=&page=&pageSize=` list customers
 - `GET /api/admin/customers/:id` customer detail
 - `POST /api/admin/customers` create customer

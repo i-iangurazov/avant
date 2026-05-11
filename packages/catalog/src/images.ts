@@ -58,12 +58,36 @@ const normalizeConfiguredStorageUrl = (url: URL) => {
   }
 };
 
+export const isCatalogImageDataUrl = (value: string | null | undefined) => {
+  const trimmed = value?.trim();
+  if (!trimmed || CONTROL_CHARACTERS.test(trimmed)) return false;
+
+  const commaIndex = trimmed.indexOf(',');
+  if (commaIndex <= 0 || commaIndex === trimmed.length - 1) return false;
+
+  const metadata = trimmed.slice(0, commaIndex).toLowerCase();
+  return /^data:image\/[a-z0-9.+-]+(?:;[a-z0-9!#$&^_.+-]+(?:=[^;,]+)?)*$/.test(metadata);
+};
+
 export const normalizeCatalogImageUrl = (value: string | null | undefined): string | null => {
   const trimmed = value?.trim();
   if (!trimmed || CONTROL_CHARACTERS.test(trimmed)) return null;
 
+  if (isCatalogImageDataUrl(trimmed)) {
+    return trimmed;
+  }
+
   if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
     return trimmed;
+  }
+
+  if (trimmed.startsWith('//')) {
+    try {
+      const url = new URL(`https:${trimmed}`);
+      if (url.hostname) return normalizeConfiguredStorageUrl(url).toString();
+    } catch {
+      return null;
+    }
   }
 
   try {

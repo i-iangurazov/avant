@@ -65,6 +65,8 @@ const buildVariant = (variant?: Partial<ProductFormVariant>): ProductFormVariant
   sku: variant?.sku ?? '',
 });
 
+const isImageDataUrl = (value: string) => /^data:image\/[a-z0-9.+-]+[;,]/i.test(value.trim());
+
 export default function ProductsAdmin() {
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [items, setItems] = useState<ProductListItem[]>([]);
@@ -272,6 +274,18 @@ export default function ProductsAdmin() {
     return null;
   };
 
+  const uploadImageFormData = useCallback(async (formData: FormData) => {
+    const response = await fetch('/api/admin/products/upload-image', {
+      method: 'POST',
+      body: formData,
+    });
+    const payload = (await response.json().catch(() => null)) as { url?: string; message?: string } | null;
+    if (!response.ok || !payload?.url) {
+      throw new Error(payload?.message ?? 'Не удалось загрузить изображение.');
+    }
+    return payload.url;
+  }, []);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
@@ -283,22 +297,34 @@ export default function ProductsAdmin() {
     }
 
     const parsedSortOrder = Number(form.sortOrder);
-    const payload = {
-      name: form.name.trim(),
-      categoryId: form.categoryId,
-      subcategoryId: form.subcategoryId ? form.subcategoryId : null,
-      imageUrl: form.imageUrl.trim() ? form.imageUrl.trim() : null,
-      sortOrder: Number.isFinite(parsedSortOrder) ? parsedSortOrder : undefined,
-      isActive: form.isActive,
-      variants: form.variants.map((variant) => ({
-        label: variant.label.trim(),
-        price: Number(variant.price),
-        sku: variant.sku.trim() ? variant.sku.trim() : null,
-      })),
-    };
+    let imageUrl = form.imageUrl.trim() ? form.imageUrl.trim() : null;
 
     setFormSubmitting(true);
     try {
+      if (imageUrl && isImageDataUrl(imageUrl)) {
+        setFormUploading(true);
+        setUploadNotice(null);
+        const formData = new FormData();
+        formData.append('imageUrl', imageUrl);
+        imageUrl = await uploadImageFormData(formData);
+        setForm((prev) => ({ ...prev, imageUrl: imageUrl ?? prev.imageUrl }));
+        setUploadNotice('Изображение загружено.');
+      }
+
+      const payload = {
+        name: form.name.trim(),
+        categoryId: form.categoryId,
+        subcategoryId: form.subcategoryId ? form.subcategoryId : null,
+        imageUrl,
+        sortOrder: Number.isFinite(parsedSortOrder) ? parsedSortOrder : undefined,
+        isActive: form.isActive,
+        variants: form.variants.map((variant) => ({
+          label: variant.label.trim(),
+          price: Number(variant.price),
+          sku: variant.sku.trim() ? variant.sku.trim() : null,
+        })),
+      };
+
       const response = await fetch(
         form.id ? `/api/admin/products/${form.id}` : '/api/admin/products',
         {
@@ -315,21 +341,17 @@ export default function ProductsAdmin() {
       setDialogOpen(false);
       resetForm();
       await loadProducts();
-    } catch {
-      setFormError('Не удалось сохранить товар.');
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Не удалось сохранить товар.');
     } finally {
       setFormSubmitting(false);
+      setFormUploading(false);
     }
   };
 
   const validateImageFile = useCallback((file: File) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-    if (!allowedTypes.includes(file.type)) {
-      return 'Допустимы только изображения JPEG, PNG или WebP.';
-    }
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      return 'Размер файла не должен превышать 5 МБ.';
+    if (file.type && !file.type.toLowerCase().startsWith('image/')) {
+      return 'Допустимы только изображения.';
     }
     return null;
   }, []);
@@ -346,24 +368,16 @@ export default function ProductsAdmin() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch('/api/admin/products/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
-      const payload = (await response.json().catch(() => null)) as { url?: string; message?: string } | null;
-      if (!response.ok || !payload?.url) {
-        setFormError(payload?.message ?? 'Не удалось загрузить изображение.');
-        return;
-      }
-      setForm((prev) => ({ ...prev, imageUrl: payload.url ?? prev.imageUrl }));
+      const imageUrl = await uploadImageFormData(formData);
+      setForm((prev) => ({ ...prev, imageUrl }));
       setFormFile(null);
       setUploadNotice('Изображение загружено.');
-    } catch {
-      setFormError('Не удалось загрузить изображение.');
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Не удалось загрузить изображение.');
     } finally {
       setFormUploading(false);
     }
-  }, [validateImageFile]);
+  }, [uploadImageFormData, validateImageFile]);
 
   const handleUpload = async () => {
     if (!formFile) return;
@@ -590,7 +604,7 @@ export default function ProductsAdmin() {
     </Button>
   ) : (
     <>
-      <Button type="submit" form={formId} disabled={formSubmitting}>
+      <Button type="submit" form={formId} disabled={formSubmitting || formUploading}>
         {formSubmitting ? 'Сохранение...' : form.id ? 'Сохранить товар' : 'Создать товар'}
       </Button>
       <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
@@ -1039,7 +1053,7 @@ export default function ProductsAdmin() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/*"
                     className="sr-only"
                     onChange={(event) => {
                       setFormFile(event.target.files?.[0] ?? null);
@@ -1051,7 +1065,7 @@ export default function ProductsAdmin() {
                       type="button"
                       variant="outline"
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={formUploading}
+                      disabled={formUploading || formSubmitting}
                     >
                       <Upload className="size-4" />
                       Выбрать файл
@@ -1060,7 +1074,7 @@ export default function ProductsAdmin() {
                       type="button"
                       variant="outline"
                       onClick={handleUpload}
-                      disabled={!formFile || formUploading}
+                      disabled={!formFile || formUploading || formSubmitting}
                     >
                       <Upload className="size-4" />
                       {formUploading ? 'Загрузка...' : 'Загрузить'}
@@ -1076,7 +1090,7 @@ export default function ProductsAdmin() {
               </Field>
             </div>
             <div className="text-xs text-muted-foreground">
-              Допустимые типы: jpeg, png, webp. Максимальный размер 5 МБ.
+              Можно указать ссылку, data URL или загрузить файл изображения.
             </div>
 
             <div className="space-y-3">

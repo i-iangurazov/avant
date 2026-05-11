@@ -15,6 +15,15 @@ describe('normalizeCatalogImageUrl', () => {
     expect(normalizeCatalogImageUrl('/avantech/pipe.svg')).toBe('/avantech/pipe.svg');
   });
 
+  it('keeps image data URLs and normalizes protocol-relative links', () => {
+    expect(normalizeCatalogImageUrl('data:image/png;base64,aGVsbG8=')).toBe(
+      'data:image/png;base64,aGVsbG8='
+    );
+    expect(normalizeCatalogImageUrl('//cdn.example.com/products/item.png')).toBe(
+      'https://cdn.example.com/products/item.png'
+    );
+  });
+
   it('repairs stored r2.dev URLs that are missing the configured bucket path', () => {
     const previousBase = process.env.S3_PUBLIC_BASE_URL;
     const previousBucket = process.env.S3_BUCKET;
@@ -44,8 +53,8 @@ describe('normalizeCatalogImageUrl', () => {
 
   it('rejects malformed or unsafe values', () => {
     expect(normalizeCatalogImageUrl('$2b')).toBeNull();
+    expect(normalizeCatalogImageUrl('data:text/html;base64,PHNjcmlwdD4=')).toBeNull();
     expect(normalizeCatalogImageUrl('javascript:alert(1)')).toBeNull();
-    expect(normalizeCatalogImageUrl('//example.com/image.png')).toBeNull();
     expect(normalizeCatalogImageUrl('')).toBeNull();
     expect(normalizeCatalogImageUrl('   ')).toBeNull();
   });

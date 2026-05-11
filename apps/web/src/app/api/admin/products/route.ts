@@ -3,6 +3,7 @@ import { prisma, Locale, Prisma } from '@plumbing/db';
 import { normalizeCatalogImageUrl } from '@plumbing/catalog/images';
 import { requireAdmin } from '@/lib/auth/requireAdmin';
 import { jsonError, jsonErrorFromZod, jsonOk } from '@/lib/apiResponse';
+import { ProductImageSourceError, resolveProductImageUrl } from '@/lib/images/productImage';
 import { normalizeWhitespace } from '@/lib/importer/normalize';
 import { slugify } from '@/lib/importer/slug';
 
@@ -19,7 +20,7 @@ const productSchema = z.object({
   name: z.string().min(1),
   categoryId: z.string().min(1),
   subcategoryId: z.string().optional().nullable(),
-  imageUrl: z.string().max(2048).optional().nullable(),
+  imageUrl: z.string().optional().nullable(),
   slug: z.string().optional().nullable(),
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
@@ -148,9 +149,17 @@ export async function POST(request: Request) {
   const slugInput = normalizeWhitespace(parsed.data.slug ?? '');
   const baseSlug = slugify(slugInput || name);
   const slug = baseSlug ? await buildUniqueSlug(baseSlug) : null;
-  const rawImageUrl = parsed.data.imageUrl?.trim() ?? '';
-  const imageUrl = rawImageUrl ? normalizeCatalogImageUrl(rawImageUrl) : null;
-  if (rawImageUrl && !imageUrl) {
+  let imageUrl: string | null;
+  try {
+    imageUrl = await resolveProductImageUrl(parsed.data.imageUrl);
+  } catch (error) {
+    if (error instanceof ProductImageSourceError) {
+      return jsonError({ code: 'invalid_image_url', message: error.message }, 400);
+    }
+    console.error(error);
+    return jsonError({ code: 'image_upload_failed', message: 'Не удалось загрузить изображение.' }, 500);
+  }
+  if (parsed.data.imageUrl?.trim() && !imageUrl) {
     return jsonError({ code: 'invalid_image_url', message: 'Некорректный URL изображения.' }, 400);
   }
 
