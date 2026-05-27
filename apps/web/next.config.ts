@@ -51,6 +51,8 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   transpilePackages: ['@plumbing/db', '@plumbing/catalog'],
   images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 31536000, // 1 year — optimised images are content-addressed
     remotePatterns: buildImageRemotePatterns(),
   },
 };

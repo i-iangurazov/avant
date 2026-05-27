@@ -381,7 +381,8 @@ export default function OrdersAdmin() {
         }),
       });
 
-      const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+      // Consume the response body so the connection is released cleanly.
+      await response.json().catch(() => null);
       if (!response.ok) {
         setCreateError('Не удалось создать заказ.');
         return;

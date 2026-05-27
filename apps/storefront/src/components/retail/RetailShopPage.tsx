@@ -11,10 +11,10 @@ import {
   type CatalogCategory,
   type CatalogVariant,
 } from '@plumbing/catalog/catalogApi';
-import { formatPrice } from '@plumbing/catalog/format';
 import { type CartItemInput, useCartStore } from '@/lib/cart/cartStore';
 import { resolveVariantPrice } from '@plumbing/catalog/pricing';
 import { flattenRetailCatalog, sortRetailItems, type RetailSortOption } from '@/lib/retail/catalog';
+import { capitalizeCategory } from '@/lib/categoryUtils';
 import { useLanguage } from '@/lib/useLanguage';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
@@ -59,7 +59,6 @@ export default function RetailShopPage({ categories, basePath = '' }: Props) {
   const tShop = useTranslations('retail.shop');
   const tHeader = useTranslations('retail.header');
   const tCart = useTranslations('retail.cart');
-  const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
   const items = useCartStore((state) => state.items);
   const addToCart = useCartStore((state) => state.addToCart);
@@ -77,9 +76,6 @@ export default function RetailShopPage({ categories, basePath = '' }: Props) {
   const [checkoutErrors, setCheckoutErrors] = useState<CheckoutErrors>({});
   const normalizedBasePath = basePath.replace(/\/$/, '');
   const shopPath = normalizedBasePath ? `${normalizedBasePath}/shop` : '/shop';
-
-  const currencyLabel = tCommon('labels.currency');
-  const formatPriceLocalized = (amount: number) => formatPrice(amount, lang, currencyLabel);
 
   const retailItems = useMemo(() => flattenRetailCatalog(categories), [categories]);
   const { productsById, variantsById } = useMemo(() => indexCatalog(categories), [categories]);
@@ -238,10 +234,6 @@ export default function RetailShopPage({ categories, basePath = '' }: Props) {
     () => cartLines.reduce((sum, line) => sum + line.quantity, 0),
     [cartLines]
   );
-  const totalPrice = useMemo(
-    () => cartLines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0),
-    [cartLines]
-  );
 
   const getQuantity = (variantId: string) => items[variantId]?.quantity ?? 0;
 
@@ -361,7 +353,7 @@ export default function RetailShopPage({ categories, basePath = '' }: Props) {
         .slice(0, 4)
         .map((category) => ({
           href: `${shopPath}?category=${encodeURIComponent(category.slug ?? category.id)}`,
-          label: category.name,
+          label: capitalizeCategory(category.name),
         })),
     [categories, shopPath]
   );
@@ -442,6 +434,7 @@ export default function RetailShopPage({ categories, basePath = '' }: Props) {
             </Select>
           </div>
 
+          {/* Category filter chips — names formatted in Title Case */}
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
@@ -473,11 +466,12 @@ export default function RetailShopPage({ categories, basePath = '' }: Props) {
                       : 'bg-slate-100 text-slate-700 hover:bg-primary/5 hover:text-foreground'
                   }`}
                 >
-                  {category.name}
+                  {capitalizeCategory(category.name)}
                 </button>
               ))}
           </div>
 
+          {/* Subcategory chips — also Title Case */}
           {selectedCategoryId !== 'all' && availableSubcategories.length > 0 ? (
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -502,7 +496,7 @@ export default function RetailShopPage({ categories, basePath = '' }: Props) {
                       : 'border-border bg-white text-muted-foreground hover:border-primary/30 hover:text-foreground'
                   }`}
                 >
-                  {subcategory.name}
+                  {capitalizeCategory(subcategory.name)}
                 </button>
               ))}
             </div>
@@ -522,7 +516,6 @@ export default function RetailShopPage({ categories, basePath = '' }: Props) {
               <RetailProductCard
                 key={item.id}
                 item={item}
-                formatPrice={formatPriceLocalized}
                 getQuantity={getQuantity}
                 onAddToCart={handleAddToCart}
                 onIncrement={handleIncrement}
@@ -561,8 +554,6 @@ export default function RetailShopPage({ categories, basePath = '' }: Props) {
           lines={cartLines}
           checkout={checkout}
           checkoutErrors={checkoutErrors}
-          totalPrice={formatPriceLocalized(totalPrice)}
-          formatPrice={formatPriceLocalized}
           onCheckoutChange={handleCheckoutChange}
           onIncrement={handleIncrement}
           onDecrement={decrement}

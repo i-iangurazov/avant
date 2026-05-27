@@ -52,6 +52,7 @@
       "placeholder": "Search products",
       "submitLabel": "Search",
       "empty": "No matches",
+      "noResultsFor": "No results for \"{query}\"",
       "categoryLabel": "Category",
       "allCategories": "All categories",
       "subcategoryLabel": "Subcategory",
@@ -61,7 +62,8 @@
       "uncategorized": "Uncategorized",
       "searchEmpty": "No products match this search.",
       "priceFrom": "Price from",
-      "selectedPrice": "Selected price"
+      "selectedPrice": "Selected price",
+      "backToAll": "Back to all products"
     },
     "auth": {
       "title": "Admin sign in",

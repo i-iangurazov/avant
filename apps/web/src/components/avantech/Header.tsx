@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import type { SearchEntry } from '@plumbing/catalog/catalogApi';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import SearchWithSuggestions from './SearchWithSuggestions';
+import SearchWithSuggestions, { type EntryMeta } from './SearchWithSuggestions';
 
 type Props = {
   entries: SearchEntry[];
@@ -12,6 +12,8 @@ type Props = {
   onSearchQueryChange: (query: string) => void;
   onSelect: (entry: SearchEntry) => void;
   formatPrice: (price: number) => string;
+  /** Supplies thumbnail URL and category name for each suggestion row. */
+  getEntryMeta?: (entry: SearchEntry) => EntryMeta;
   categories: Array<{ id: string; name: string }>;
   subcategories: Array<{ id: string; name: string }>;
   selectedCategoryId: string;
@@ -26,6 +28,7 @@ export default function Header({
   onSearchQueryChange,
   onSelect,
   formatPrice,
+  getEntryMeta,
   categories,
   subcategories,
   selectedCategoryId,
@@ -58,6 +61,7 @@ export default function Header({
             onQueryChange={onSearchQueryChange}
             onSelect={onSelect}
             formatPrice={formatPrice}
+            getEntryMeta={getEntryMeta}
           />
           <div className="flex flex-col gap-2">
             <div className="w-full">

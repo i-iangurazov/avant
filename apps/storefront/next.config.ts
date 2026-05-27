@@ -54,7 +54,28 @@ const nextConfig: NextConfig = {
     return config;
   },
   images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 31536000, // 1 year — optimised images are content-addressed
     remotePatterns: buildImageRemotePatterns(),
+  },
+  async headers() {
+    return [
+      {
+        // Apply to all routes so the 2GIS iframe embeds on the homepage are allowed.
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            // frame-src: allow 2GIS map widget iframes.
+            // connect-src: allow 2GIS tile/API requests initiated inside the iframe.
+            value: [
+              "frame-src 'self' https://2gis.kg https://widgets.2gis.com https://*.2gis.com",
+              "connect-src 'self' https://2gis.kg https://widgets.2gis.com https://*.2gis.com",
+            ].join('; '),
+          },
+        ],
+      },
+    ];
   },
 };
 

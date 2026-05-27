@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import { Copy, Eye, EyeOff, Pencil, Plus, Search, Trash2, Upload } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -767,10 +768,15 @@ export default function ProductsAdmin() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <div className="h-12 w-12 overflow-hidden rounded-lg border border-border bg-muted/20">
+                              <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-border bg-muted/20">
                                 {item.imageUrl ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                                  <Image
+                                    src={item.imageUrl}
+                                    alt={item.name}
+                                    fill
+                                    sizes="48px"
+                                    className="object-cover"
+                                  />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase text-muted-foreground">
                                     Нет фото
@@ -850,10 +856,15 @@ export default function ProductsAdmin() {
                       <div className="flex flex-col gap-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 overflow-hidden rounded-lg border border-border bg-muted/20">
+                            <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-border bg-muted/20">
                               {item.imageUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                                <Image
+                                  src={item.imageUrl}
+                                  alt={item.name}
+                                  fill
+                                  sizes="48px"
+                                  className="object-cover"
+                                />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase text-muted-foreground">
                                   Нет фото

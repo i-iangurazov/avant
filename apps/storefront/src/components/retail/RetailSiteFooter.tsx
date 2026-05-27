@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Instagram, MapPin } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { capitalizeCategory } from '@/lib/categoryUtils';
 
 type Props = {
   categoryLinks?: Array<{ href: string; label: string }>;
@@ -72,7 +73,7 @@ export default function RetailSiteFooter({ categoryLinks = [], basePath = '' }: 
             {categoryLinks.length > 0 ? (
               categoryLinks.map((link) => (
                 <Link key={link.href} href={link.href} className="transition hover:text-white">
-                  {link.label}
+                  {capitalizeCategory(link.label)}
                 </Link>
               ))
             ) : (

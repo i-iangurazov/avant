@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Locale } from '@plumbing/db';
 import { getLocale, getTranslations } from 'next-intl/server';
 import RetailShopPage from '@/components/retail/RetailShopPage';
-import { getCatalogCategories } from '@plumbing/catalog/catalogData';
+import { getCachedCatalogCategories } from '@/lib/retail/cachedCatalog';
 import { defaultLocale, isLanguage } from '@/lib/i18n';
 
 const resolveLocale = async () => {
@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ShopPage() {
   const locale = await resolveLocale();
-  const categories = await getCatalogCategories(locale);
+  const categories = await getCachedCatalogCategories(locale);
 
   return <RetailShopPage categories={categories} />;
 }

@@ -52,6 +52,7 @@
       "placeholder": "Поиск товаров",
       "submitLabel": "Искать",
       "empty": "Совпадений нет",
+      "noResultsFor": "Нет результатов для \"{query}\"",
       "categoryLabel": "Категория",
       "allCategories": "Все категории",
       "subcategoryLabel": "Подкатегория",
@@ -61,7 +62,8 @@
       "uncategorized": "Без подкатегории",
       "searchEmpty": "По этому запросу товаров нет.",
       "priceFrom": "Цена от",
-      "selectedPrice": "Цена варианта"
+      "selectedPrice": "Цена варианта",
+      "backToAll": "Все товары"
     },
     "auth": {
       "title": "Вход",

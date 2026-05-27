@@ -9,11 +9,12 @@ import { type RetailCatalogItem } from '@/lib/retail/catalog';
 import { resolveVariantPrice } from '@plumbing/catalog/pricing';
 import { Button } from '@/components/ui/button';
 import QuantityStepper from '@/components/avantech/QuantityStepper';
+import { capitalizeCategory } from '@/lib/categoryUtils';
+import { BLUR_SLATE } from '@/lib/imagePlaceholder';
 import { cn } from '@/lib/utils';
 
 type Props = {
   item: RetailCatalogItem;
-  formatPrice: (amount: number) => string;
   getQuantity: (variantId: string) => number;
   onAddToCart: (item: CartItemInput) => void;
   onIncrement: (variantId: string) => void;
@@ -23,7 +24,6 @@ type Props = {
 
 export default function RetailProductCard({
   item,
-  formatPrice,
   getQuantity,
   onAddToCart,
   onIncrement,
@@ -43,11 +43,6 @@ export default function RetailProductCard({
   const selectedVariant =
     item.variants.find((variant) => variant.id === selectedVariantId) ?? item.variants[0] ?? null;
   const quantity = selectedVariant ? getQuantity(selectedVariant.id) : 0;
-  const selectedPrice = selectedVariant ? resolveVariantPrice(selectedVariant, 'retail') : item.minPrice;
-  const hasPriceRange = item.minPrice !== item.maxPrice;
-  const priceLabel = hasPriceRange
-    ? `${tShop('fromLabel')} ${formatPrice(item.minPrice)}`
-    : formatPrice(selectedPrice);
 
   const handleAdd = () => {
     if (!selectedVariant) return;
@@ -63,14 +58,16 @@ export default function RetailProductCard({
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-md border border-border bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
-      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+      <div className="relative aspect-[4/3] overflow-hidden bg-white">
         {item.product.imageUrl ? (
           <Image
             src={item.product.imageUrl}
             alt={item.product.name}
             fill
-            sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover transition duration-500 group-hover:scale-[1.03]"
+            sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+            className="object-contain p-3 transition duration-500 group-hover:scale-[1.03]"
+            placeholder="blur"
+            blurDataURL={BLUR_SLATE}
           />
         ) : (
           <div className="flex h-full items-end p-5">
@@ -82,13 +79,14 @@ export default function RetailProductCard({
       </div>
 
       <div className="flex flex-1 flex-col gap-4 p-4">
+        {/* Category + subcategory badges — names formatted in Title Case */}
         <div className="flex flex-wrap gap-2 text-xs font-semibold">
           <span className="rounded-md bg-primary/10 px-2.5 py-1 text-primary">
-            {item.category.name}
+            {capitalizeCategory(item.category.name)}
           </span>
           {item.subcategory ? (
             <span className="rounded-md bg-sky-50 px-2.5 py-1 text-sky-700">
-              {item.subcategory.name}
+              {capitalizeCategory(item.subcategory.name)}
             </span>
           ) : null}
         </div>
@@ -102,17 +100,9 @@ export default function RetailProductCard({
           )}
         </div>
 
-        <div className="border-t border-border pt-3">
-          <div className="text-xs uppercase text-muted-foreground">{tShop('priceLabel')}</div>
-          <div className="mt-1 text-2xl font-semibold text-slate-950">{priceLabel}</div>
-          <div className="mt-1 text-sm text-muted-foreground">
-            {tShop('variantCount', { count: item.variants.length })}
-          </div>
-        </div>
-
+        {/* Variant selector — label only, no price displayed */}
         <div className="flex flex-wrap gap-2">
           {item.variants.map((variant) => {
-            const price = resolveVariantPrice(variant, 'retail');
             const isSelected = variant.id === selectedVariant?.id;
 
             return (
@@ -121,16 +111,13 @@ export default function RetailProductCard({
                 type="button"
                 onClick={() => setPreferredVariantId(variant.id)}
                 className={cn(
-                  'min-h-[48px] rounded-md border px-3 py-2 text-left transition',
+                  'min-h-[44px] rounded-md border px-3 py-2 text-left transition',
                   isSelected
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border bg-white text-foreground hover:border-primary/35 hover:bg-primary/5'
                 )}
               >
                 <div className="text-sm font-semibold">{variant.label}</div>
-                <div className={cn('text-xs', isSelected ? 'text-white/80' : 'text-muted-foreground')}>
-                  {formatPrice(price)}
-                </div>
               </button>
             );
           })}

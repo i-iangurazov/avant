@@ -156,7 +156,11 @@
       "valueRangeTitle": "One shared catalog for home and plumbing",
       "valueRangeDescription": "Faucets, toilets, radiators, reducers, fittings, and accessories live in one store backed by the same product database.",
       "closingTitle": "Find the right item in the catalog",
-      "closingDescription": "The shop keeps categories, variants, and prices in one place so customers move from search to purchase faster."
+      "closingDescription": "The shop keeps categories, variants, and prices in one place so customers move from search to purchase faster.",
+      "storesTitle": "Our stores",
+      "storesSubtitle": "Visit any of our stores in Bishkek",
+      "storeLabel": "Store {number}",
+      "storesOpen2gis": "Open in 2GIS"
     },
     "shop": {
       "eyebrow": "Avant Santex retail shop",
@@ -215,6 +219,7 @@
       "sending": "Sending...",
       "submitSuccess": "Order sent to the manager.",
       "submitError": "Failed to send the order.",
+      "qty": "Qty",
       "removeItem": "Remove item",
       "increaseQty": "Increase quantity",
       "decreaseQty": "Decrease quantity"

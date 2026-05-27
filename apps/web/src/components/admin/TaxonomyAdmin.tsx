@@ -281,7 +281,8 @@ export default function TaxonomyAdmin() {
           body: JSON.stringify(payload),
         }
       );
-      const resultPayload = (await response.json().catch(() => null)) as { message?: string } | null;
+      // Consume the response body so the connection is released cleanly.
+      await response.json().catch(() => null);
       if (!response.ok) {
         setCategoryFormError('Не удалось сохранить категорию.');
         return;
@@ -327,7 +328,8 @@ export default function TaxonomyAdmin() {
           body: JSON.stringify(payload),
         }
       );
-      const resultPayload = (await response.json().catch(() => null)) as { message?: string } | null;
+      // Consume the response body so the connection is released cleanly.
+      await response.json().catch(() => null);
       if (!response.ok) {
         setSubcategoryFormError('Не удалось сохранить подкатегорию.');
         return;

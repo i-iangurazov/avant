@@ -52,6 +52,7 @@
       "placeholder": "Товарларды издөө",
       "submitLabel": "Издөө",
       "empty": "Табылган жок",
+      "noResultsFor": "\"{query}\" боюнча жыйынтык жок",
       "categoryLabel": "Категория",
       "allCategories": "Бардык категориялар",
       "subcategoryLabel": "Төмөнкү категория",
@@ -61,7 +62,8 @@
       "uncategorized": "Подкатегориясыз",
       "searchEmpty": "Бул издөө боюнча товар табылган жок.",
       "priceFrom": "Баасы",
-      "selectedPrice": "Варианттын баасы"
+      "selectedPrice": "Варианттын баасы",
+      "backToAll": "Бардык товарлар"
     },
     "auth": {
       "title": "Админ кирүү",

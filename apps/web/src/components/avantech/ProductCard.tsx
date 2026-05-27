@@ -7,6 +7,7 @@ import type { CatalogProduct, CatalogVariant } from '@plumbing/catalog/catalogAp
 import { formatDisplayTitle } from '@/lib/formatTitle';
 import { useLanguage } from '@/lib/useLanguage';
 import { cn } from '@/lib/utils';
+import { BLUR_SLATE } from '@/lib/imagePlaceholder';
 import VariantChips from './VariantChips';
 
 type Props = {
@@ -71,6 +72,8 @@ export default function ProductCard({
               fill
               sizes="96px"
               className="object-cover"
+              placeholder="blur"
+              blurDataURL={BLUR_SLATE}
               onError={() => setFailedImageUrl(imageSrc)}
             />
           ) : (

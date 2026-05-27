@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { Trash2 } from 'lucide-react';
+import { BLUR_SLATE } from '@/lib/imagePlaceholder';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,6 @@ type CartLine = {
   variantId: string;
   productName: string;
   variantLabel: string;
-  unitPrice: number;
   quantity: number;
   imageUrl?: string | null;
 };
@@ -32,8 +32,6 @@ type Props = {
   lines: CartLine[];
   checkout: CheckoutDetails;
   checkoutErrors: CheckoutErrors;
-  totalPrice: string;
-  formatPrice: (amount: number) => string;
   onCheckoutChange: (field: keyof CheckoutDetails, value: string) => void;
   onIncrement: (variantId: string) => void;
   onDecrement: (variantId: string) => void;
@@ -48,8 +46,6 @@ export default function RetailCartDrawer({
   lines,
   checkout,
   checkoutErrors,
-  totalPrice,
-  formatPrice,
   onCheckoutChange,
   onIncrement,
   onDecrement,
@@ -136,79 +132,74 @@ export default function RetailCartDrawer({
               </div>
             </div>
 
-            {lines.map((line) => {
-              const lineTotal = line.unitPrice * line.quantity;
-              return (
-                <div key={line.variantId} className="rounded-3xl border border-border bg-white p-4 shadow-sm">
-                  <div className="flex gap-3">
-                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-muted/60">
-                      {line.imageUrl ? (
-                        <Image
-                          src={line.imageUrl}
-                          alt={line.productName}
-                          fill
-                          sizes="80px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                          Avant
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-foreground">{line.productName}</div>
-                      <div className="text-xs text-muted-foreground">{line.variantLabel}</div>
-                      <div className="mt-2 text-sm font-semibold text-slate-950">
-                        {line.quantity} x {formatPrice(line.unitPrice)} = {formatPrice(lineTotal)}
+            {lines.map((line) => (
+              <div key={line.variantId} className="rounded-3xl border border-border bg-white p-4 shadow-sm">
+                <div className="flex gap-3">
+                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-muted/60">
+                    {line.imageUrl ? (
+                      <Image
+                        src={line.imageUrl}
+                        alt={line.productName}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                        placeholder="blur"
+                        blurDataURL={BLUR_SLATE}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                        Avant
                       </div>
-                    </div>
+                    )}
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between gap-2">
-                    <QuantityStepper
-                      value={line.quantity}
-                      onIncrement={() => onIncrement(line.variantId)}
-                      onDecrement={() => onDecrement(line.variantId)}
-                      onChange={(next) => onSetQuantity(line.variantId, next)}
-                      increaseLabel={tCart('increaseQty')}
-                      decreaseLabel={tCart('decreaseQty')}
-                      className="min-w-[148px] justify-start"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onRemove(line.variantId)}
-                      aria-label={tCart('removeItem')}
-                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-foreground">{line.productName}</div>
+                    <div className="text-xs text-muted-foreground">{line.variantLabel}</div>
+                    {/* Quantity shown as plain text — no price displayed */}
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      {tCart('qty')}: {line.quantity}
+                    </div>
                   </div>
                 </div>
-              );
-            })}
+
+                <div className="mt-4 flex items-center justify-between gap-2">
+                  <QuantityStepper
+                    value={line.quantity}
+                    onIncrement={() => onIncrement(line.variantId)}
+                    onDecrement={() => onDecrement(line.variantId)}
+                    onChange={(next) => onSetQuantity(line.variantId, next)}
+                    increaseLabel={tCart('increaseQty')}
+                    decreaseLabel={tCart('decreaseQty')}
+                    className="min-w-[148px] justify-start"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onRemove(line.variantId)}
+                    aria-label={tCart('removeItem')}
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </ScrollArea>
 
       <SheetFooter className="border-t border-border bg-white px-6 py-4">
         <div className="flex w-full flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                {tCart('total')}
-              </div>
-              <div className="text-xl font-semibold text-foreground">{totalPrice}</div>
-            </div>
-            {lines.length > 0 ? (
+          {/* Footer: clear + submit only — no price/total shown */}
+          {lines.length > 0 ? (
+            <div className="flex justify-end">
               <Button type="button" variant="outline" onClick={onClear}>
                 {tCart('clear')}
               </Button>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
           <Button
             type="button"
             size="lg"
