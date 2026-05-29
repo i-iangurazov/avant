@@ -60,6 +60,7 @@
     },
     "catalog": {
       "uncategorized": "Uncategorized",
+      "searchPrompt": "Enter a product name in search",
       "searchEmpty": "No products match this search.",
       "priceFrom": "Price from",
       "selectedPrice": "Selected price",

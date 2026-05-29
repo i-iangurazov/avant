@@ -12,16 +12,16 @@ import { BLUR_SLATE } from '@/lib/imagePlaceholder';
 /** Metadata resolved per entry — passed from the parent so this component stays generic. */
 export type EntryMeta = {
   imageUrl: string | null;
-  categoryName: string;
 };
 
 type Props = {
   entries: SearchEntry[];
   query: string;
   onQueryChange: (query: string) => void;
+  onSubmit: (query: string) => void;
   onSelect: (entry: SearchEntry) => void;
   formatPrice: (price: number) => string;
-  /** Optional: supplies thumbnail URL and category name for each suggestion row. */
+  /** Optional: supplies thumbnail URL for each suggestion row. */
   getEntryMeta?: (entry: SearchEntry) => EntryMeta;
 };
 
@@ -48,6 +48,7 @@ export default function SearchWithSuggestions({
   entries,
   query,
   onQueryChange,
+  onSubmit,
   onSelect,
   formatPrice,
   getEntryMeta,
@@ -101,6 +102,7 @@ export default function SearchWithSuggestions({
   const commitSearch = () => {
     setIsOpen(false);
     setActiveIndex(-1);
+    onSubmit(query);
     inputRef.current?.blur();
   };
 
@@ -256,13 +258,6 @@ export default function SearchWithSuggestions({
                           </div>
                         ) : null}
                       </div>
-
-                      {/* Category badge */}
-                      {meta?.categoryName ? (
-                        <span className="shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                          {meta.categoryName}
-                        </span>
-                      ) : null}
 
                       {/* Price */}
                       <div className="shrink-0 text-xs font-semibold text-muted-foreground">

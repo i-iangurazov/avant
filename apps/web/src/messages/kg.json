@@ -60,6 +60,7 @@
     },
     "catalog": {
       "uncategorized": "Подкатегориясыз",
+      "searchPrompt": "Издөөгө товардын атын киргизиңиз",
       "searchEmpty": "Бул издөө боюнча товар табылган жок.",
       "priceFrom": "Баасы",
       "selectedPrice": "Варианттын баасы",

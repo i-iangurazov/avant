@@ -60,6 +60,7 @@
     },
     "catalog": {
       "uncategorized": "Без подкатегории",
+      "searchPrompt": "Введите в поиск название товара",
       "searchEmpty": "По этому запросу товаров нет.",
       "priceFrom": "Цена от",
       "selectedPrice": "Цена варианта",
