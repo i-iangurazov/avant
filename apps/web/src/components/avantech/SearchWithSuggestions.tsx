@@ -67,11 +67,11 @@ export default function SearchWithSuggestions({
     return () => window.clearTimeout(id);
   }, [query]);
 
-  // Show up to 15 suggestions at a time.
+  // Show all matching suggestions; the dropdown itself remains scrollable.
   const results = useMemo(() => {
     const trimmed = debouncedQuery.trim();
     if (!trimmed) return [];
-    return searchCatalogEntries(entries, trimmed, 15);
+    return searchCatalogEntries(entries, trimmed, entries.length);
   }, [entries, debouncedQuery]);
 
   const safeActiveIndex = useMemo(() => {
@@ -200,7 +200,7 @@ export default function SearchWithSuggestions({
               {t('noResultsFor', { query: debouncedQuery.trim() })}
             </div>
           ) : (
-            /* Up to 15 results; scrollable so the dropdown never overflows the viewport */
+            /* Scrollable so the dropdown never overflows the viewport */
             <ul
               ref={listRef}
               role="listbox"
